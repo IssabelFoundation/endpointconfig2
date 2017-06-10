@@ -1039,30 +1039,30 @@ function initializeJQueryUIViews()
 
 function mostrar_mensaje_error(s)
 {
-	$('#elastix-module-error-message-text').text(s);
-	$('#elastix-module-error-message').show('slow', 'linear', function() {
+	$('#issabel-module-error-message-text').text(s);
+	$('#issabel-module-error-message').show('slow', 'linear', function() {
 		setTimeout(function() {
-			$('#elastix-module-error-message').fadeOut();
+			$('#issabel-module-error-message').fadeOut();
 		}, 10000);
 	});
 }
 
 function mostrar_mensaje_info(s)
 {
-	$('#elastix-module-info-message-text').text(s);
-	$('#elastix-module-info-message').show('slow', 'linear', function() {
+	$('#issabel-module-info-message-text').text(s);
+	$('#issabel-module-info-message').show('slow', 'linear', function() {
 		setTimeout(function() {
-			$('#elastix-module-info-message').fadeOut();
+			$('#issabel-module-info-message').fadeOut();
 		}, 10000);
 	});
 }
 
 function mostrar_mensaje_error_dialog(s)
 {
-	$('#elastix-module-error-message-text-dialog').text(s);
-	$('#elastix-module-error-message-dialog').show('slow', 'linear', function() {
+	$('#issabel-module-error-message-text-dialog').text(s);
+	$('#issabel-module-error-message-dialog').show('slow', 'linear', function() {
 		setTimeout(function() {
-			$('#elastix-module-error-message-dialog').fadeOut();
+			$('#issabel-module-error-message-dialog').fadeOut();
 		}, 10000);
 	});
 }

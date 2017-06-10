@@ -45,7 +45,7 @@ class Aastra extends BaseVendorResource
         /*
         case 'logo.bmp':
             header('Content-Type: image/bmp');
-            readfile(ELASTIX_BASE.'images/elastix.bmp');
+            readfile(ISSABEL_BASE.'images/elastix.bmp');
             break;
         */
         default:

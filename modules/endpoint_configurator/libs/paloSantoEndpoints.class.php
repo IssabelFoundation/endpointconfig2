@@ -202,7 +202,7 @@ SQL_LEER_ACC_PROP;
     
     function iniciarScanRed($netmask)
     {
-    	$sComando = '/usr/bin/elastix-helper detect_endpoints '.escapeshellarg($netmask).' 2>&1';
+    	$sComando = '/usr/bin/issabel-helper detect_endpoints '.escapeshellarg($netmask).' 2>&1';
         $output = $ret = NULL;
         exec($sComando, $output, $ret);
         if ($ret != 0) {
@@ -472,7 +472,7 @@ SQL_CUENTAS_NO_ASIGNADAS;
         
         // Invocar el programa python para borrar los archivos de configuración
         $output = $ret = NULL;
-        exec('/usr/bin/elastix-endpointconfig --clearconfig 2>&1', $output, $ret);
+        exec('/usr/bin/issabel-endpointconfig --clearconfig 2>&1', $output, $ret);
         if ($ret != 0) {
             $this->_errMsg = implode("\n", $output);
             return NULL;
@@ -495,7 +495,7 @@ SQL_CUENTAS_NO_ASIGNADAS;
         // Invocar el programa python para ejecutar la configuración de endpoints
         $logfile = tempnam('/tmp', 'endpointconfig-');
         $output = $retval = NULL;
-        exec('/usr/bin/elastix-endpointconfig --applyconfig --progressfile '.escapeshellarg($logfile).' 2>&1',
+        exec('/usr/bin/issabel-endpointconfig --applyconfig --progressfile '.escapeshellarg($logfile).' 2>&1',
             $output, $retval);
         if ($retval != 0) {
             $this->_errMsg = implode("\n", $output);

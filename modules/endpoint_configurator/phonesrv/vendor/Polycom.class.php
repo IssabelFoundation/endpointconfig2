@@ -44,7 +44,7 @@ class Polycom extends BaseVendorResource
         switch ($service) {
         case 'logo.bmp':
             header('Content-Type: image/bmp');
-            readfile(ELASTIX_BASE.'images/elastix.bmp');
+            readfile(ISSABEL_BASE.'images/elastix.bmp');
             break;
         default:
             $method = '_handle_'.$service;

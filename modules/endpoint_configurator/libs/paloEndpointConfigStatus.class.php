@@ -166,8 +166,8 @@ class paloEndpointConfigStatus extends paloInterfaceSSE
             $currentClientState['logOffset'] = ftell($this->_logfd);
             
             $regs = NULL;
-            // 2013-07-03 12:24:25 : INFO: (elastix-endpointconfig) (1/3) global configuration update for VOPTech...
-            if (preg_match('|^(\S+ \S+) : \w+: \(elastix-endpointconfig\) \((\d+)/(\d+)\) global configuration update (failed)?\s*for|', $s, $regs)) {
+            // 2013-07-03 12:24:25 : INFO: (issabel-endpointconfig) (1/3) global configuration update for VOPTech...
+            if (preg_match('|^(\S+ \S+) : \w+: \(issabel-endpointconfig\) \((\d+)/(\d+)\) global configuration update (failed)?\s*for|', $s, $regs)) {
                 $logdate = $regs[1];
                 $curstep = $regs[2];
                 $totalstep = $regs[3];
@@ -179,8 +179,8 @@ class paloEndpointConfigStatus extends paloInterfaceSSE
                 	$jsonResponse['founderror'] = TRUE;
                 }
                 
-            // 2013-07-03 12:24:25 : INFO: (elastix-endpointconfig) (2/3) starting configuration for endpoint VOPTech@192.168.254.245 (1)...
-            } elseif (preg_match('|^(\S+ \S+) : \w+: \(elastix-endpointconfig\) \((\d+)/(\d+)\) (\w+) configuration for endpoint \S+@(\S+) \((\d+)\)|', $s, $regs)) {
+            // 2013-07-03 12:24:25 : INFO: (issabel-endpointconfig) (2/3) starting configuration for endpoint VOPTech@192.168.254.245 (1)...
+            } elseif (preg_match('|^(\S+ \S+) : \w+: \(issabel-endpointconfig\) \((\d+)/(\d+)\) (\w+) configuration for endpoint \S+@(\S+) \((\d+)\)|', $s, $regs)) {
             	$logdate = $regs[1];
                 $curstep = $regs[2];
                 $totalstep = $regs[3];

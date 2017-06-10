@@ -1,21 +1,21 @@
 {* Este DIV se usa para mostrar los mensajes de información *}
 <div
-    id="elastix-module-info-message"
+    id="issabel-module-info-message"
     class="ui-state-highlight ui-corner-all"
     style="display: none;">
     <p>
         <span class="ui-icon ui-icon-info" style="float: left; margin-right: .3em;"></span>
-        <span id="elastix-module-info-message-text"></span>
+        <span id="issabel-module-info-message-text"></span>
     </p>
 </div>
 {* Este DIV se usa para mostrar los mensajes de error *}
 <div
-    id="elastix-module-error-message"
+    id="issabel-module-error-message"
     class="ui-state-error ui-corner-all"
     style="display: none;">
     <p>
         <span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>
-        <span id="elastix-module-error-message-text"></span>
+        <span id="issabel-module-error-message-text"></span>
     </p>
 </div>
 <div id="endpointConfigApplication" style="background-color: #f0f0f0;">
@@ -169,12 +169,12 @@
 
 <script type="text/x-handlebars" data-template-name="endpoints/endpointconfig">
 <div
-    id="elastix-module-error-message-dialog"
+    id="issabel-module-error-message-dialog"
     class="ui-state-error ui-corner-all"
     style="display: none;">
     <p>
         <span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>
-        <span id="elastix-module-error-message-text-dialog"></span>
+        <span id="issabel-module-error-message-text-dialog"></span>
     </p>
 </div>
 {literal}{{outlet}}{/literal}

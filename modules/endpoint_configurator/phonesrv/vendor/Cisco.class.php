@@ -45,7 +45,7 @@ class Cisco extends BaseVendorResource
         switch ($service) {
         case 'logo.bmp':
             header('Content-Type: image/bmp');
-            readfile(ELASTIX_BASE.'images/elastix.bmp');
+            readfile(ISSABEL_BASE.'images/elastix.bmp');
             break;
         default:
             if (!$this->_checkSEP($id_endpoint)) {

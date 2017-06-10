@@ -25,7 +25,7 @@ Requires: nmap
 Requires(pre): tftp-server
 Conflicts: elastix-pbx <= 2.4.0-15
 
-Obsoletes: elastix-endpointconfig2
+Obsoletes: issabel-endpointconfig2
 
 %description
 The Issabel Endpoint Configurator is a complete rewrite and reimplementation of
@@ -74,7 +74,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/
 mv setup/etc/httpd/ $RPM_BUILD_ROOT/etc/
 
 mv setup/usr/ $RPM_BUILD_ROOT/
-mkdir -p $RPM_BUILD_ROOT/usr/local/share/elastix/endpoint-classes/tpl
+mkdir -p $RPM_BUILD_ROOT/usr/local/share/issabel/endpoint-classes/tpl
 
 rm -rf setup/build/
 
@@ -88,23 +88,23 @@ rmdir setup/tftpboot
 
 # The following folder should contain all the data that is required by the installer,
 # that cannot be handled by RPM.
-mkdir -p    $RPM_BUILD_ROOT/usr/share/elastix/module_installer/%{name}-%{version}-%{release}/
-mv setup/   $RPM_BUILD_ROOT/usr/share/elastix/module_installer/%{name}-%{version}-%{release}/
-mv menu.xml $RPM_BUILD_ROOT/usr/share/elastix/module_installer/%{name}-%{version}-%{release}/
+mkdir -p    $RPM_BUILD_ROOT/usr/share/issabel/module_installer/%{name}-%{version}-%{release}/
+mv setup/   $RPM_BUILD_ROOT/usr/share/issabel/module_installer/%{name}-%{version}-%{release}/
+mv menu.xml $RPM_BUILD_ROOT/usr/share/issabel/module_installer/%{name}-%{version}-%{release}/
 
 %pre
-mkdir -p /usr/share/elastix/module_installer/%{name}-%{version}-%{release}/
-touch /usr/share/elastix/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
+mkdir -p /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/
+touch /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
 if [ $1 -eq 2 ]; then
-    rpm -q --queryformat='%{VERSION}-%{RELEASE}' %{name} > /usr/share/elastix/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
+    rpm -q --queryformat='%{VERSION}-%{RELEASE}' %{name} > /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
 fi
 
 
 %post
-pathModule="/usr/share/elastix/module_installer/%{name}-%{version}-%{release}"
+pathModule="/usr/share/issabel/module_installer/%{name}-%{version}-%{release}"
 
 # Run installer script to fix up ACLs and add module to Elastix menus.
-elastix-menumerge /usr/share/elastix/module_installer/%{name}-%{version}-%{release}/menu.xml
+issabel-menumerge /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/menu.xml
 
 pathSQLiteDB="/var/www/db"
 mkdir -p $pathSQLiteDB
@@ -112,48 +112,48 @@ preversion=`cat $pathModule/preversion_%{modname}.info`
 
 if [ $1 -eq 1 ]; then #install
   # The installer database
-    elastix-dbprocess "install" "$pathModule/setup/db"
+    issabel-dbprocess "install" "$pathModule/setup/db"
 
   # Restart apache to disable HTTPS redirect on phonesrv script
   /sbin/service httpd restart
 elif [ $1 -eq 2 ]; then #update
-    elastix-dbprocess "update"  "$pathModule/setup/db" "$preversion"
+    issabel-dbprocess "update"  "$pathModule/setup/db" "$preversion"
 fi
 rm -f $pathModule/preversion_%{modname}.info
 
 # Remove old endpointconfig2 menu item
-elastix-menuremove endpointconfig2
+issabel-menuremove endpointconfig2
 
 # Prepare tftpboot for use by module
 chmod 777 /tftpboot/
-cat /usr/share/elastix/module_installer/%{name}-%{version}-%{release}/setup/etc/xinetd.d/tftp > /etc/xinetd.d/tftp
+cat /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/setup/etc/xinetd.d/tftp > /etc/xinetd.d/tftp
 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %preun
-pathModule="/usr/share/elastix/module_installer/%{name}-%{version}-%{release}"
+pathModule="/usr/share/issabel/module_installer/%{name}-%{version}-%{release}"
 if [ $1 -eq 0 ] ; then # Validation for desinstall this rpm
   echo "Delete distributed dial plan menus"
-  elastix-menuremove "%{modname}"
+  issabel-menuremove "%{modname}"
 
   echo "Dump and delete %{name} databases"
-  elastix-dbprocess "delete" "$pathModule/setup/db"
+  issabel-dbprocess "delete" "$pathModule/setup/db"
 fi
 
 
 %files
 %defattr(-, root, root)
 %{_localstatedir}/www/html/*
-/usr/share/elastix/module_installer/*
-/usr/share/elastix/endpoint-classes
-/usr/local/share/elastix/endpoint-classes
+/usr/share/issabel/module_installer/*
+/usr/share/issabel/endpoint-classes
+/usr/local/share/issabel/endpoint-classes
 /tftpboot/*
 %defattr(644, root, root)
-/etc/httpd/conf.d/elastix-endpointconfig.conf
+/etc/httpd/conf.d/issabel-endpointconfig.conf
 %defattr(755, root, root)
 /usr/bin/*
-/usr/share/elastix/privileged/*
+/usr/share/issabel/privileged/*
 
 %changelog

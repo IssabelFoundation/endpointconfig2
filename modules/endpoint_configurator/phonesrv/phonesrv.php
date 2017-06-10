@@ -28,10 +28,10 @@
   $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
 */
 
-define('ELASTIX_BASE', '/var/www/html/');
-require_once(ELASTIX_BASE.'libs/misc.lib.php');
-require_once(ELASTIX_BASE.'configs/default.conf.php');
-require_once(ELASTIX_BASE.'libs/paloSantoDB.class.php');
+define('ISSABEL_BASE', '/var/www/html/');
+require_once(ISSABEL_BASE.'libs/misc.lib.php');
+require_once(ISSABEL_BASE.'configs/default.conf.php');
+require_once(ISSABEL_BASE.'libs/paloSantoDB.class.php');
 
 load_default_timezone();
 
@@ -68,7 +68,7 @@ if (!file_exists($sVendorPath)) {
 require_once $sVendorPath;
 
 // Conexión a la base de datos
-$dsn = generarDSNSistema('asteriskuser', 'endpointconfig', ELASTIX_BASE);
+$dsn = generarDSNSistema('asteriskuser', 'endpointconfig', ISSABEL_BASE);
 $db = new paloDB($dsn);
 if ($db->errMsg != '') {
     header('HTTP/1.1 500 Internal Server Error');

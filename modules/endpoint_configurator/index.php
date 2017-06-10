@@ -586,7 +586,7 @@ function network()
     /* OJO: paloNetwork::getNetAdress() ha sido reescrito y es ahora una función
      * estática. Si PHP se queja de que la función no puede llamarse en contexto
      * estático, NO PARCHE AQUí. En su lugar, actualice a 
-     * elastix-system-2.3.0-10 o superior. El spec de elastix-pbx ya tiene este
+     * issabel-system-2.3.0-10 o superior. El spec de issabel-pbx ya tiene este
      * requerimiento mínimo. */
     $ip = $_SERVER['SERVER_ADDR'];
     $total = subMask($ip);

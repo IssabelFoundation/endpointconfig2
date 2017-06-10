@@ -28,10 +28,10 @@
   $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
 */
 
-require_once(ELASTIX_BASE.'configs/default.conf.php');
-require_once(ELASTIX_BASE.'modules/address_book/libs/paloSantoAdressBook.class.php');
-require_once(ELASTIX_BASE.'modules/address_book/configs/default.conf.php');
-require_once(ELASTIX_BASE.'libs/misc.lib.php');
+require_once(ISSABEL_BASE.'configs/default.conf.php');
+require_once(ISSABEL_BASE.'modules/address_book/libs/paloSantoAdressBook.class.php');
+require_once(ISSABEL_BASE.'modules/address_book/configs/default.conf.php');
+require_once(ISSABEL_BASE.'libs/misc.lib.php');
 
 $arrConf = array_merge($arrConf, $arrConfModule);
 
@@ -69,7 +69,7 @@ class BaseVendorResource
         foreach ($recordset as $tupla) $accounts[] = $tupla['account'];
         
         global $arrConf;
-        $pdbACL = new paloDB($arrConf['elastix_dsn']['acl']);
+        $pdbACL = new paloDB($arrConf['issabel_dsn']['acl']);
         $sql = 'SELECT id AS id_user, name AS name_user FROM acl_user WHERE extension = ? ORDER BY id';
         foreach ($accounts as $account) {
             $tupla = $pdbACL->getFirstRowQuery($sql, TRUE, array($account));
@@ -110,7 +110,7 @@ class BaseVendorResource
         $addressBook = new paloAdressBook($arrConf['dsn_conn_database']);
         switch ($addressBookType) {
         case 'internal':
-            $astDSN = generarDSNSistema('asteriskuser', 'asterisk', ELASTIX_BASE.'/');
+            $astDSN = generarDSNSistema('asteriskuser', 'asterisk', ISSABEL_BASE.'/');
             if (!is_null($sBuscarNombre)) {
             	$field_name = 'name';
                 $field_pattern = "%{$sBuscarNombre}%";
