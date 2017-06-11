@@ -81,20 +81,20 @@ server_address = {{server_ip}}/contactData1.xml
 [ RemotePhoneBook0 ]
 path = /yealink/config/Setting/Setting.cfg
 URL = {{phonesrv}}/internal
-Name = Elastix Phonebook - Internal
+Name = Issabel Phonebook - Internal
 
 [ RemotePhoneBook1 ]
 path = /yealink/config/Setting/Setting.cfg
 URL = {{phonesrv}}/external
-Name = Elastix Phonebook - External
+Name = Issabel Phonebook - External
 
 [ RemotePhoneBook2 ]
 path = /yealink/config/Setting/Setting.cfg
 URL = {{phonesrv}}/internal?name=#SEARCH
-Name = Elastix Search - Internal
+Name = Issabel Search - Internal
 
 [ RemotePhoneBook3 ]
 path = /yealink/config/Setting/Setting.cfg
 URL = {{phonesrv}}/external?name=#SEARCH
-Name = Elastix Search - External
+Name = Issabel Search - External
 

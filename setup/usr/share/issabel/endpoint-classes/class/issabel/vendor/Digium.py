@@ -104,7 +104,7 @@ class Endpoint(BaseEndpoint):
         modified = False
         targetproperties = {
             'service_discovery_enabled' : 'yes',
-            'service_name' : 'Elastix',
+            'service_name' : 'Issabel',
             'config_auth' : 'mac'
         }
         for k in targetproperties:

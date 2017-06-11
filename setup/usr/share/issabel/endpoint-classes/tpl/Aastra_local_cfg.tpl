@@ -28,7 +28,7 @@ use alternate tftp: 1
 
 xml application post list: {{server_ip}}
 xml application uri: {{phonesrv}}/
-xml application title: "Elastix Services for Aastra"
+xml application title: "Issabel Services for Aastra"
 
 softkey1 type: speeddial
 softkey1 label: "Voice Mail"

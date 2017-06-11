@@ -92,8 +92,8 @@ local_time.time_zone = {{time_zone}}
 #######################################################################################
 #Remote Phonebook 
 remote_phonebook.data.1.url = {{phonesrv}}/internal
-remote_phonebook.data.1.name = Elastix Phonebook - Internal
+remote_phonebook.data.1.name = Issabel Phonebook - Internal
 remote_phonebook.data.2.url = {{phonesrv}}/external
-remote_phonebook.data.2.name = Elastix Phonebook - External
+remote_phonebook.data.2.name = Issabel Phonebook - External
 directory.update_time_interval = 20
 

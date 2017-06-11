@@ -1081,10 +1081,10 @@ Config.Ldap.LDAP.SearchDelay = 1000
 
 # Remote Phone Book Configuration
 
-Config.RemotePhoneBook.REMOTE_PHONE_BOOK0.DisplayName = Elastix Phonebook - Internal
+Config.RemotePhoneBook.REMOTE_PHONE_BOOK0.DisplayName = Issabel Phonebook - Internal
 Config.RemotePhoneBook.REMOTE_PHONE_BOOK0.Url = {{phonesrv}}/int.xml
 
-Config.RemotePhoneBook.REMOTE_PHONE_BOOK1.DisplayName = Elastix Phonebook - External
+Config.RemotePhoneBook.REMOTE_PHONE_BOOK1.DisplayName = Issabel Phonebook - External
 Config.RemotePhoneBook.REMOTE_PHONE_BOOK1.Url = {{phonesrv}}/ext.xml
 
 Config.RemotePhoneBook.REMOTE_PHONE_BOOK2.DisplayName = 

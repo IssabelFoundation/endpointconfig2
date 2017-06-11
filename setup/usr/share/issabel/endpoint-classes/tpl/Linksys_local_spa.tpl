@@ -20,7 +20,7 @@
     <Voice_Mail_Number  ua="na">*97</Voice_Mail_Number>
     <Paging_Code ua="na">*80</Paging_Code>
     <Select_Logo ua="ua">Text Logo</Select_Logo>
-    <Text_Logo ua="na">Elastix</Text_Logo>
+    <Text_Logo ua="na">Issabel</Text_Logo>
     <Select_Background_Picture ua="ua">Text Logo</Select_Background_Picture>
 <!-- <BMP_Picture_Download_URL ua="ua">tftp://{{server_ip}}/Linksys.bmp</BMP_Picture_Download_URL> -->
 

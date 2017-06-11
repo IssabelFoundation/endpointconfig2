@@ -79,9 +79,9 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                 # space for it is too short for the full hash. Use P4401 instead.
                 'P331'  :   '',
                 'P4401' :   stdvars['phonesrv'] + '/internal.xml',
-                'P3316' :   'Elastix - Internal',
+                'P3316' :   'Issabel - Internal',
                 'P4402' :   stdvars['phonesrv'] + '/external.xml',
-                'P3312' :   'Elastix - External',
+                'P3312' :   'Issabel - External',
                 
                 # Allow DHCP to override config server (0/1)
                 'P145'  :   '0',
