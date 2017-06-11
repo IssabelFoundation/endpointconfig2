@@ -22,7 +22,6 @@
 # | the License for the specific language governing rights and           |
 # | limitations under the License.                                       |
 # +----------------------------------------------------------------------+
-# | The Original Code is: Elastix Open Source.                           |
 # | The Initial Developer of the Original Code is PaloSanto Solutions    |
 # | CiscoSPA.py file forked from Linksys.py by Bob Fryer 07/06/2015      |
 # | Other modifications made :                                           |

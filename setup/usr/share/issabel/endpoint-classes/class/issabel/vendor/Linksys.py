@@ -22,7 +22,6 @@
 # | the License for the specific language governing rights and           |
 # | limitations under the License.                                       |
 # +----------------------------------------------------------------------+
-# | The Original Code is: Elastix Open Source.                           |
 # | The Initial Developer of the Original Code is PaloSanto Solutions    |
 # | Other modifications made :                                           |
 # | * Added code to convert GMT Offsite into format for Cisco SPA Phones |
