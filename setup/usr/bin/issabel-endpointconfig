@@ -8,11 +8,6 @@
 # +----------------------------------------------------------------------+
 # | Copyright (c) 2006 Palosanto Solutions S. A.                         |
 # +----------------------------------------------------------------------+
-# | Cdla. Nueva Kennedy Calle E 222 y 9na. Este                          |
-# | Telfs. 2283-268, 2294-440, 2284-356                                  |
-# | Guayaquil - Ecuador                                                  |
-# | http://www.palosanto.com                                             |
-# +----------------------------------------------------------------------+
 # | The contents of this file are subject to the General Public License  |
 # | (GPL) Version 2 (the "License"); you may not use this file except in |
 # | compliance with the License. You may obtain a copy of the License at |
@@ -32,10 +27,10 @@ All mentions of "current" or "currently" refer to the state of the code as of
 2012-06-23 in the 2.3.0 branch of the Elastix SVN repository.
 
 This program is an attempt to improve on the current situation of the Endpoint
-Configurator. The Endpoint Configurator (EC) is an Elastix module that tries to 
+Configurator. The Endpoint Configurator (EC) is an Issabel module that tries to 
 centralize the discovery and configuration of VoIP phones on the LAN, to save an
 administrator the trouble of having to log into the administration interface of
-each phone in order to point the phone to the Elastix server. Currently the 
+each phone in order to point the phone to the Issabel server. Currently the 
 Endpoint Configurator is sort of adequate for configuring at most a dozen phones
 at a time, or to change the configuration of a single phone. It, however, fails
 to be of help when configuring hundreds or even thousands of phones at a time.
@@ -49,7 +44,7 @@ endpoint.
 
 The design goals of this program are the following:
 1) Parallel configuration: the EC needs to contact the phone in order to reboot
-   it and make it read the configuration from the Elastix server (for the common 
+   it and make it read the configuration from the Issabel server (for the common 
    TFTP configuration case). Currently this operation is synchronous, so each
    phone of the list needs to wait until the previous phone has been contacted 
    in order to start configuration. This program aims to run the configuration 
@@ -87,7 +82,7 @@ For each endpoint to configure, the following needs to take place.
   endpoint. Alternatively, the file used to load the endpoint IPs must also 
   indicate which extensions should be associated to each endpoint. It is assumed
   that each endpoint has an unique IPv4 address and is reachable from the 
-  Elastix system. Also, all endpoints to configure must have a specific model
+  Issabel system. Also, all endpoints to configure must have a specific model
   associated to them, as the model selection is required (for most vendors) in 
   order to know how to configure the phone.
 - This program receives a file with the list of IPv4s of all the phones to
