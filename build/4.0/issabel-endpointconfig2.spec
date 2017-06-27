@@ -135,7 +135,7 @@ rm -rf $RPM_BUILD_ROOT
 pathModule="/usr/share/issabel/module_installer/%{name}-%{version}-%{release}"
 if [ $1 -eq 0 ] ; then # Validation for desinstall this rpm
   echo "Delete endpoint configurator menus"
-  issabel-menuremove "%{modname}"
+  issabel-menuremove endpoint_configurator
 
   echo "Dump and delete %{name} databases"
   issabel-dbprocess "delete" "$pathModule/setup/db"
