@@ -128,14 +128,13 @@ issabel-menuremove endpointconfig2
 chmod 777 /tftpboot/
 cat /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/setup/etc/xinetd.d/tftp > /etc/xinetd.d/tftp
 
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %preun
 pathModule="/usr/share/issabel/module_installer/%{name}-%{version}-%{release}"
 if [ $1 -eq 0 ] ; then # Validation for desinstall this rpm
-  echo "Delete distributed dial plan menus"
+  echo "Delete endpoint configurator menus"
   issabel-menuremove "%{modname}"
 
   echo "Dump and delete %{name} databases"
