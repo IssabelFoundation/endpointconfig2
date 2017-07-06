@@ -3,7 +3,7 @@
 Summary: Issabel Endpoint Configurator Module
 Name:    issabel-%{modname}
 Version: 4.0.0
-Release: 2
+Release: 1
 License: GPL
 Group:   Applications/System
 Source0: %{modname}_%{version}-%{release}.tgz
@@ -25,7 +25,7 @@ Requires: nmap
 Requires(pre): tftp-server
 Conflicts: elastix-pbx <= 2.4.0-15
 
-Obsoletes: issabel-endpointconfig2
+Obsoletes: elastix-endpointconfig2
 
 %description
 The Issabel Endpoint Configurator is a complete rewrite and reimplementation of
