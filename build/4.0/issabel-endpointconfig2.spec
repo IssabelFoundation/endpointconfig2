@@ -25,7 +25,7 @@ Requires: nmap
 Requires(pre): tftp-server
 Conflicts: elastix-pbx <= 2.4.0-15
 
-Obsoletes: issabel-endpointconfig2
+Obsoletes: elastix-endpointconfig2
 
 %description
 The Issabel Endpoint Configurator is a complete rewrite and reimplementation of
