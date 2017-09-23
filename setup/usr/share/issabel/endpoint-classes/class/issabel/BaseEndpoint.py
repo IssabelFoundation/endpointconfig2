@@ -299,7 +299,7 @@ class BaseEndpoint(object):
         try:
             dbconn = self._dbpool.get()
             sth = dbconn.cursor()
-            sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip));
+            sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip,));
             row = sth.fetchone()
             if row != None:
                 id = row[0]
@@ -347,7 +347,7 @@ class BaseEndpoint(object):
         try:
             dbconn = self._dbpool.get()
             sth = dbconn.cursor()
-            sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip));
+            sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip,));
             row = sth.fetchone()
             if row != None:
                 id = row[0]
