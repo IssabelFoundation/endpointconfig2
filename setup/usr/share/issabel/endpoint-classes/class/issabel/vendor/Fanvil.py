@@ -27,6 +27,7 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
+import time
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Atcom
 from eventlet.green import socket
@@ -35,7 +36,8 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
         BaseEndpoint.__init__(self, 'Fanvil', amipool, dbpool, sServerIP, sIP, mac)
         self._bridge = True
-        self._timeZone = 12
+        stdtimeZone = BaseEndpoint.getTimezoneOffset() / 60 / 60
+        self._timeZone = stdtimeZone * 4
 
     def probeModel(self):
         '''Probe specific model of the Fanvil phone
@@ -44,14 +46,20 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
         '''
         self._http_username = 'admin'
         self._http_password = 'admin'
-        htmlres = self._fetchAtcomAuthenticatedPage(('/title.htm', '/currentstat.htm',))
+        htmlres = self._fetchAtcomAuthenticatedPage(('/information.htm', '/title.htm', '/currentstat.htm',))
         if htmlres != None:
             resource, htmlbody = htmlres
 
             # Fanvil returns /title.htm as the normal case
             if resource == '/title.htm':
                 # C56/C56P</span>
-                m = re.search(r'((C|X|D)\d+)(/\w+)?</span>', htmlbody)
+                m = re.search(r'((C|X|D|i)\d+S?)(/\w+)?</span>', htmlbody)
+                if m != None:
+                    self._saveModel(m.group(1))
+                    return
+            elif resource == '/information.htm':
+                # H2S H3 H5
+                m = re.search(r'((C|X|D|i|H)\d+S?)(/\w+)?</td>', htmlbody)
                 if m != None:
                     self._saveModel(m.group(1))
                     return
@@ -71,7 +79,8 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
                         self._saveModel('VI2006')
 
     def isModelV2(self):
-        return (self._model in ('X3', 'X3P', 'X5', 'X5P', 'C400', 'C400P', 'C600', 'C600P', 'D900'))
+        #return (self._model in ('X3', 'X3P', 'X5', 'X5P', 'X6', 'X6P', 'C400', 'C400P', 'C600', 'C600P', 'D900'))
+        return (self._model in ('X3', 'X3P', 'X4', 'X4P', 'X5', 'X5P', 'X6', 'X6P', 'C400', 'C400P', 'C600', 'C600P', 'D900','i20S', 'H5'))
 
     def updateLocalConfig(self):
         '''Configuration for Fanvil endpoints
@@ -87,7 +96,10 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
             return False
 
         if self.isModelV2():
-            configVersion = self._fetchOldConfigVersion(('/config.txt',))
+            if self._model == 'X6':
+                configVersion = self._fetchOldConfigVersion(('/default_user_config.txt',))
+            else:
+                configVersion = self._fetchOldConfigVersion(('/config.txt',))
         else:
             configVersion = self._fetchOldConfigVersion()
         if configVersion == None: return False
@@ -112,47 +124,48 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
         if not self.isModelV2():
             return parent._transferConfig2Phone(sConfigFile)
 
+        status = True
+
+        f = open(self._tftpdir + '/' +sConfigFile)
+        content = f.read()
+        f.close()
+
+        http, nonce = self._setupAtcomAuthentication()
+        if http == None: return False
+
+        boundary = '------------------ENDPOINTCONFIG'
+        postdata = '--' + boundary + '\r\n' +\
+            'Content-Disposition: form-data; name="CONFIG"; filename="/config.txt"\r\n' +\
+            'Content-Type: text/plain\r\n' +\
+            '\r\n' +\
+            content + '\r\n' +\
+            '--' + boundary + '--\r\n'
+        http.request('POST', '/config.htm', postdata,
+            {
+                'Content-Type' : ' multipart/form-data; boundary=' + boundary,
+                'Connection' : 'keep-alive',
+                'Cookie' : 'auth=' + nonce
+            })
         try:
-            status = True
-
-            f = open(self._tftpdir + '/' +sConfigFile)
-            content = f.read()
-            f.close()
-
-            http, nonce = self._setupAtcomAuthentication()
-            if http == None: return False
-
-            boundary = '------------------ENDPOINTCONFIG'
-            postdata = '--' + boundary + '\r\n' +\
-                'Content-Disposition: form-data; name="System"; filename="config.txt"\r\n' +\
-                'Content-Type: text/plain\r\n' +\
-                '\r\n' +\
-                content + '\r\n' +\
-                '--' + boundary + '--\r\n'
-            http.request('POST', '/config.htm', postdata,
-                {
-                    'Content-Type' : ' multipart/form-data; boundary=' + boundary,
-                    'Connection' : 'keep-alive',
-                    'Cookie' : 'auth=' + nonce
-                })
             resp = http.getresponse()
             htmlbody = resp.read()
             if resp.status != 200:
                 logging.error('Endpoint %s@%s failed to post configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))
                 status = False
-            elif not ('Submit Success' in htmlbody):
-                logging.error('Endpoint %s@%s failed to post configuration - unknown body follows: %s' %
-                    (self._vendorname, self._ip, htmlbody))
-                status = False
+            elif (not 'Submit Success' in htmlbody):
+                if not ('Phone in rebooting' in htmlbody):
+                    logging.error('Endpoint %s@%s failed to post configuration - unknown body follows: %s' %
+                        (self._vendorname, self._ip, htmlbody))
+                    status = False
 
             # TODO: does this race with the phone reboot?
             if not self._cleanupAtcomAuthentication(http, nonce):
                 status = False
-
             return status
-        except socket.error, e:
-            logging.error('Endpoint %s@%s failed to connect - %s' %
-                    (self._vendorname, self._ip, str(e)))
-            return False
-
+        except:
+             if self._model == 'X6':
+                 status = True
+                 return status
+             else:    
+                 logging.warning('Endpoint %s@%s HTTP Response Time Out' % (self._vendorname, self._ip))

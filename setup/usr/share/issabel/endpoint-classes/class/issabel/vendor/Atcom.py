@@ -28,6 +28,7 @@
 import logging
 import md5
 import re
+import requests
 from issabel.BaseEndpoint import BaseEndpoint
 import eventlet
 from eventlet.green import socket, httplib, urllib
@@ -355,14 +356,17 @@ class Endpoint(BaseEndpoint):
             listaConfigVersion = (
                 '/autoprovision.htm',    # AT610
                 '/autoupdate.htm',       # AT530
+                '/config.htm',          # Fanvil x6
+                '/default_user_config.txt',       #Fanvil X6
                 '/config.txt'            # Placed last because it is prone to hangs on AT610
             )
         else:
             listaConfigVersion = customList
+
         htmlres = self._fetchAtcomAuthenticatedPage(listaConfigVersion)
         if htmlres == None: return None
         resource, htmlbody = htmlres
-        if resource == '/config.txt':
+        if (resource == '/config.txt') or (resource == '/default_user_config.txt'):
             regexp = r'<<VOIP CONFIG FILE>>Version:([2-9]{1}\.[0-9]{4})'
         else:
             regexp = r'Current( Config)? Version.*?([2-9]{1}\.[0-9]{4})'
@@ -372,18 +376,22 @@ class Endpoint(BaseEndpoint):
                 (self._vendorname, self._ip))
             print htmlbody
             return None
-        if resource == '/config.txt':
+        if (resource == '/config.txt') or (resource == '/default_user_config.txt'):
             return m.group(1)
         return m.group(2)
 
     def _setupAtcomAuthentication(self):
         http = httplib.HTTPConnection(self._ip)
 
-        noncesources = ('/', '/right.htm')
+        noncesources = ('/', '/', '/right.htm')
         for noncesource in noncesources:
             http.request('GET', noncesource, None, {'Connection' : 'keep-alive'})
             resp = http.getresponse()
             htmlbody = resp.read()
+            session = requests.Session()
+            mcookie = session.cookies.get_dict()
+            response = session.get('http://' + self._ip)
+            mcookie = session.cookies.get_dict()
             if not resp.status in (200, 404):
                 logging.error('Endpoint %s@%s failed to fetch nonce for HTTP configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))
@@ -391,14 +399,20 @@ class Endpoint(BaseEndpoint):
                 return (None, None)
             elif resp.status == 200:
                 m = re.search(r'<input type="hidden" name="nonce" value="([0-9a-zA-Z]+)">', htmlbody)
-                if m != None: break
+                if m == None: 
+                    if mcookie == "":
+                        break
+                    else:
+                        m = re.search('(.*)', mcookie['auth'])
+                        break
+
+
         if m == None:
             logging.error('Endpoint %s@%s failed to locate nonce in HTTP response' %
                 (self._vendorname, self._ip))
             http.close()
             return (None, None)
         nonce = m.group(1)
-
         # Identify firmware
         if noncesource == '/right.htm': self._firmware = 1 # Old firmware
 
@@ -417,6 +431,7 @@ class Endpoint(BaseEndpoint):
         }
         postdata = urllib.urlencode(postvars)
         http.request('POST', noncesource, postdata, extraheaders)
+       
         resp = http.getresponse()
         if resp.status != 200:
             logging.error('Endpoint %s@%s failed to fetch login result - got response code %s' %
@@ -492,6 +507,7 @@ class Endpoint(BaseEndpoint):
             'version_cfg'       :   configVersion,
             'default_protocol'  :   2,
             'iax2'              :   None,
+            'model'             :   self._model,
         })
         if self._accounts[0].tech == 'sip': vars['default_protocol'] = 2
         if self._accounts[0].tech == 'iax2': vars['default_protocol'] = 4

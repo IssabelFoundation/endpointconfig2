@@ -12,6 +12,8 @@ Secondary DNS      :{{static_dns2}}
 Enable DHCP        :{{enable_dhcp}}
 
 Default Protocol   :{{default_protocol}}
+SNTP Server        :{{server_ip}}
+Enable SNTP        :1
 Time Zone          :{{time_zone}}
 
 <LAN CONFIG MODULE>
@@ -221,6 +223,24 @@ SIP{{m}} BLFList Uri   :
 SIP{{m}} Enable BLFList:0
 SIP{{m}} Caller Id Type:1{{endfor}}
 
+<PHONE CONFIG MODULE>
+--Function Key--   :
+{{py:n = 1}}
+{{for extension in sip}}
+{{if model != 'H5'}}
+Fkey{{n}} Value        :SIP{{n}}
+Fkey{{n}} Title        :{{extension.account}}
+{{py:n += 1}}
+{{endif}}
+{{endfor}}
+
+<PHONE FEATURE MODULE>
+Line Display Format:$name
+--DateTime Config--:
+SNTP Server        :{{server_ip}}
+Second SNTP Server :0.pool.ntp.org
+Time Zone          :{{time_zone}}
+SNTP Timeout       :60
 
 <IAX2 CONFIG MODULE>
 Server Address     :{{server_ip}}
@@ -254,5 +274,6 @@ Download Protocol  :2
 Download Mode      :1
 Download Interval  :1
 PNP Enable         :0
+Auto Etc Url       :{{if model}}tftp://{{server_ip}}/backgrounds/fanvil/{{model}}/BACKGROUND.bmp{{endif}}
 
 <<END OF FILE>>
