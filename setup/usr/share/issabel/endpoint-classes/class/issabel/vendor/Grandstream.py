@@ -36,6 +36,7 @@ from issabel.BaseEndpoint import BaseEndpoint
 telnetlib = eventlet.import_patched('telnetlib')
 import cookielib
 import time
+import httplib
 paramiko = eventlet.import_patched('paramiko')
 
 class Endpoint(BaseEndpoint):
@@ -97,10 +98,14 @@ class Endpoint(BaseEndpoint):
                     if response.code == 200:
                         jsonvars = self._parseBotchedJSONResponse(response)
                         if jsonvars != None and 'body' in jsonvars:
+                            logging.error('Endpoint %s@%s connection failure - %s' %
+                                (self._vendorname, self._ip, jsonvars['body']['phone_model']))
                             if '1395' in jsonvars['body'] and jsonvars['body']['1395'] == 'Elastix':
                                 self._saveVendor('Elastix')
                             if 'phone_model' in jsonvars['body']:
                                 sModel = jsonvars['body']['phone_model']
+                                logging.error('Endpoint %s@%s connection failure - %s' %
+                                (self._vendorname, self._ip, sModel))
                 except urllib2.HTTPError, e:
                     # Ignore 404 error
                     pass
@@ -202,6 +207,10 @@ class Endpoint(BaseEndpoint):
             try:
                 response = urllib2.urlopen('http://' + self._ip + impl[1])
                 body = response.read()
+                headers = response.info()
+                if 'Content-Type' in headers:
+                    if (response.info()['Content-Type'] == 'text/plain' and impl[0] != 'GXVxxxx'):
+                        continue
                 logging.info('Endpoint %s@%s appears to have %s interface...' %
                             (self._vendorname, self._ip, impl[0]))
                 return impl[2](vars)
@@ -222,10 +231,14 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXP140x(self, vars):
         try:
             # Login into interface and get SID. Check proper Content-Type
-            response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/dologin',
+            cookiejar = cookielib.CookieJar(cookielib.DefaultCookiePolicy(rfc2965=True))
+            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+            # response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/dologin',
+            response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
                 urllib.urlencode({'password' : self._http_password}))
             body = response.read()
-            if response.info()['Content-Type'] <> 'application/json':
+            content_type = response.info()['Content-Type'].rsplit(';', 1)[0]
+            if content_type <> 'application/json':
                 logging.error('Endpoint %s@%s GXP140x - dologin answered not application/json but %s' %
                     (self._vendorname, self._ip, response.info()['Content-Type']))
                 return False
@@ -240,17 +253,20 @@ class Endpoint(BaseEndpoint):
             
             # Post vars with sid
             vars.update({'sid' : sid})
-            response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/api.values.post',
+            # response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/api.values.post',
+            response = opener.open('http://' + self._ip + '/cgi-bin/api.values.post',
                 urllib.urlencode(vars))
 
             jsonvars = self._parseBotchedJSONResponse(response)
             if jsonvars == None:
+                logging.error('jsonvars vacio %s@%s GXP140x - vars rejected by interface - %s - %s - %s' %
+                    (self._vendorname, self._ip, urllib.urlencode(vars), jsonvars['body'], sid))
                 return False
             
             if not ('response' in jsonvars and jsonvars['response'] == 'success' \
                     and 'body' in jsonvars and 'status' in jsonvars['body'] and jsonvars['body']['status'] == 'right' ):
-                logging.error('Endpoint %s@%s GXP140x - vars rejected by interface - %s' %
-                    (self._vendorname, self._ip, body))
+                logging.error('Endpoint %s@%s GXP140x - vars rejected by interface - %s - %s - %s' %
+                    (self._vendorname, self._ip, urllib.urlencode(vars), jsonvars['body'], sid))
                 return False
             
             return True
@@ -271,7 +287,8 @@ class Endpoint(BaseEndpoint):
         jsonvars = None
         body = response.read()
         if response.info():
-            if response.info()['Content-Type'] <> 'application/json':
+            content_type = response.info()['Content-Type'].rsplit(';', 1)[0]
+            if content_type <> 'application/json':
                 logging.error('Endpoint %s@%s GXP140x - api.values.post answered not application/json but %s' %
                     (self._vendorname, self._ip, response.info()['Content-Type']))
                 return None
@@ -338,6 +355,10 @@ class Endpoint(BaseEndpoint):
         try:
             # Login into interface
             opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+            headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36',
+            }
+            opener.addheaders = headers.items()
             response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode({
                 'action': 'login',
                 'Username' : self._http_username,
@@ -364,7 +385,6 @@ class Endpoint(BaseEndpoint):
                 submitvars[varkey] = pk[1:]
                 submitvars[varval] = vars[pk]
                 varcount += 1
-            
             response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode(submitvars))
             body = response.read()
             if not ('Success' in body):
@@ -383,12 +403,19 @@ class Endpoint(BaseEndpoint):
                 'interval'  :   vars['P332'],
                 'rm-redup'  :   1                
             }
-            response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode(submitvars))
-            body = response.read()
-            if not ('Success' in body):
-                logging.error('Endpoint %s@%s GXV - could not reprogram phonebook' %
-                    (self._vendorname, self._ip))
-            
+            # This generates problems with GXV3240
+            # logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
+            #    (self._vendorname, self._ip, 'http://' + self._ip + '/manager?' + urllib.urlencode(submitvars)))
+            # response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode(submitvars))
+            # body = response.read()
+            # if not ('Success' in body):
+            #    logging.error('Endpoint %s@%s GXV - could not reprogram phonebook' %
+            #        (self._vendorname, self._ip))
+                    
+            return True
+        except httplib.HTTPException as e:
+            logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
+                (self._vendorname, self._ip, str(e)))
             return True
         except urllib2.HTTPError, e:
             logging.error('Endpoint %s@%s GXV failed to send vars to interface - %s' %
@@ -495,7 +522,7 @@ class Endpoint(BaseEndpoint):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
-            ssh.connect(self._ip, username=self._ssh_username, password=self._ssh_password, timeout=5)
+            ssh.connect(self._ip, username=self._ssh_username, password=self._ssh_password, allow_agent=False,look_for_keys=False, timeout=5)
             stdin, stdout, stderr = ssh.exec_command('reboot')            
             logging.info('Endpoint %s@%s - about to set timeout of %d on stdout' % (self._vendorname, self._ip, oldtimeout,))            
             stdout.channel.settimeout(5)
@@ -509,6 +536,9 @@ class Endpoint(BaseEndpoint):
         except paramiko.AuthenticationException, e:
             logging.error('Endpoint %s@%s failed to authenticate ssh - %s' %
                 (self._vendorname, self._ip, str(e)))
+        except paramiko.SSHException, e:
+            logging.warning('Endpoint %s@%s failed to authenticate ssh - %s' %
+                (self._vendorname, self._ip, str(e)))
             return False
         except urllib2.URLError, e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
@@ -520,9 +550,15 @@ class Endpoint(BaseEndpoint):
             return False
 
     def _rebootbyhttp(self):
-        logging.error('Endpoint %s@%s unimplemented reboot by HTTP' %
-            (self._vendorname, self._ip))
-        return False
+        # response = urllib2.urlopen('http://' + self._ip + '/cgi-bin//api-sys_operation?passcode=' + self._http_password + '&request=REBOOT')
+        response = opener.open('http://' + self._ip + '/cgi-bin//api-sys_operation?passcode=' + self._http_password + '&request=REBOOT')
+        jsonvars = self._parseBotchedJSONResponse(response)
+        if jsonvars == None:
+            return False 
+	if not ('response' in jsonvars and jsonvars['response'] == 'success'):
+            logging.error('Endpoint %s@%s unimplemented reboot by HTTP' %
+                (self._vendorname, self._ip))
+            return False
 
     def _hashTableGrandstreamConfig(self):
         stdvars = self._prepareVarList()
@@ -532,10 +568,11 @@ class Endpoint(BaseEndpoint):
         
         o = stdvars['server_ip'].split('.')
         vars = {
+            'P6767' :   '0', # Firmware Upgrade Via 0 - TFTP,  1 - HTTP, 2 - HTTPS
             'P192'  :   stdvars['server_ip'], # Firmware Server Path
             'P237'  :   stdvars['server_ip'], # Config Server Path
             'P212'  :   '0',            # Firmware Upgrade. 0 - TFTP Upgrade,  1 - HTTP Upgrade.
-            'P290'  :   '{ x+ | *x+ | *xx*x+ }', # (GXV3175 specific) Dialplan string
+            'P290'  :   '{ x+ | *x+ | *x | *xx*x+ }', # (GXV3175 specific) Dialplan string
 
             'P30'   :   stdvars['server_ip'], # NTP server
             'P64'   :   self._timeZone,
@@ -611,6 +648,18 @@ class Endpoint(BaseEndpoint):
     def _updateVarsByModel(self, stdvars, vars):
         if self._model in ('GXP280',):
             vars.update({'P73' : '1'})  # Send DTMF. 8 - in audio, 1 - via RTP, 2 - via SIP INFO
+
+        if self._model in ('GXP2160',):
+            # Set wallpaper
+            vars.update({'P2916' : '1'})
+            vars.update({'P2917' : 'tftp://' + stdvars['server_ip'] + '/backgrounds/grandstream/gxp21xx.jpg'})
+            # Set Voicemail access number
+            vars.update({'P33' : '*97'})
+
+        if self._model in ('GXP1625',):
+            # Set Voicemail access number
+            vars.update({'P33' : '*97'})
+ 
 
     def _grandstreamvarmap(self): 
         varmap = [
