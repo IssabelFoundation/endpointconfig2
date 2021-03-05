@@ -79,8 +79,7 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
                         self._saveModel('VI2006')
 
     def isModelV2(self):
-        #return (self._model in ('X3', 'X3P', 'X5', 'X5P', 'X6', 'X6P', 'C400', 'C400P', 'C600', 'C600P', 'D900'))
-        return (self._model in ('X3', 'X3P', 'X4', 'X4P', 'X5', 'X5P', 'X6', 'X6P', 'C400', 'C400P', 'C600', 'C600P', 'D900','i20S', 'H5'))
+        return (self._model in ('X1', 'X3', 'X3P', 'X4', 'X4P', 'X5', 'X5P', 'X6', 'X6P', 'C400', 'C400P', 'C600', 'C600P', 'D900','i20S', 'H5'))
 
     def updateLocalConfig(self):
         '''Configuration for Fanvil endpoints
@@ -96,7 +95,7 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
             return False
 
         if self.isModelV2():
-            if self._model == 'X6':
+            if (self._model == 'X6') or (self._model == 'X1'):
                 configVersion = self._fetchOldConfigVersion(('/default_user_config.txt',))
             else:
                 configVersion = self._fetchOldConfigVersion(('/config.txt',))
