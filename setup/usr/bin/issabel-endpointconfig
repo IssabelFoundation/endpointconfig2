@@ -424,7 +424,7 @@ def listIpAddresses():
 		elif 'link/ether' in s:
 			bIsEther = True
 		else:
-			regs = re.search(r'\s*inet (\d+\.\d+\.\d+.\d+)/(\d+) brd (\d+\.\d+\.\d+.\d+).+\s((\w+)(:(\d+))?)\s*$', s)
+			regs = re.search(r'\s*inet (\d+\.\d+\.\d+.\d+)/(\d+) brd (\d+\.\d+\.\d+.\d+).+\s((\w+)(:(\d+))?(\.\d+)?)\s*$', s)
 			if regs != None:
 				# Calculate netmask from number of bits
 				iMaskBits = int(regs.group(2))
