@@ -215,7 +215,7 @@ class BaseEndpoint(object):
                 target = account.account
                 break
         ami = self._amipool.get()
-        ami.Command('sip notify ' + sNotify + ' ' + target)
+        ami.command('sip notify ' + sNotify + ' ' + target)
         self._amipool.put(ami)
 
     def _hasRegisteredExtension(self):
@@ -234,7 +234,7 @@ class BaseEndpoint(object):
         ami = self._amipool.get()
         for account in self._accounts:
             if account.registered:
-                ami.Command(account.tech + ' unregister ' + account.account)
+                ami.command(account.tech + ' unregister ' + account.account)
         self._amipool.put(ami)
     
     def _saveVendor(self, sVendor):

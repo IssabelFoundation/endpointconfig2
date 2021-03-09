@@ -218,8 +218,8 @@ class Endpoint(BaseEndpoint):
 
         # Reconfigure all the phones
         ami = amipool.get()
-        ami.Command('module reload res_digium_phone.so');
-        ami.Command('digium_phones reconfigure all');
+        ami.command('module reload res_digium_phone.so');
+        ami.command('digium_phones reconfigure all');
         amipool.put(ami)
         return True
 
@@ -241,8 +241,8 @@ class Endpoint(BaseEndpoint):
         # Reconfigure all the phones, if DPMA is available
         if Endpoint._isDPMAAvailable(amipool):
             ami = amipool.get()
-            ami.Command('module reload res_digium_phone.so');
-            ami.Command('digium_phones reconfigure all');
+            ami.command('module reload res_digium_phone.so');
+            ami.command('digium_phones reconfigure all');
             amipool.put(ami)
         else:
             logging.warning('DPMA not available or loaded, cannot broadcast reconfiguration')
@@ -345,7 +345,7 @@ class Endpoint(BaseEndpoint):
         ami = amipool.get()
         
         module_loaded = False
-        r = ami.Command('module show like res_digium_phone')
+        r = ami.command('module show like res_digium_phone')
         for s in r:
             if 'res_digium_phone' in s:
                 module_loaded = True
@@ -355,7 +355,7 @@ class Endpoint(BaseEndpoint):
             return False
         
         module_licensed = False
-        r = ami.Command('digium_phones license status')
+        r = ami.command('digium_phones license status')
         for s in r:
             if 'OK, Valid' in s:
                 module_licensed = True
@@ -406,7 +406,7 @@ class Endpoint(BaseEndpoint):
                 f.close()
                 
                 ami = amipool.get()
-                ami.Command('module reload chan_sip.so');
+                ami.command('module reload chan_sip.so');
                 amipool.put(ami)
         except IOError, e:
             if e.errno != errno.ENOENT:

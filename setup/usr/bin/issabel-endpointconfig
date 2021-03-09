@@ -124,7 +124,7 @@ import eventlet.hubs
 import MySQLdb
 daemon = eventlet.import_patched('daemon')
 commands = eventlet.import_patched('commands')
-AsteriskManager = eventlet.import_patched('Asterisk.Manager')
+AsteriskManager = eventlet.import_patched('asterisk.manager')
 
 sys.path.append('/usr/share/issabel/endpoint-classes/class')
 import issabel
@@ -453,65 +453,84 @@ def queryRegisteredAccounts(amipool, endpointList):
     ''' Query Asterisk to check whether the account is registered at the last
     known IP for each endpoint '''
     ami = amipool.get()
-    
-    # TODO: truncation of long account names in Elastix 3
-    r = ami.Command('sip show peers')
-    
-    for s in r:
+
+    r = ami.command('sip show peers')
+    l = r.data.split('\n');
+    for s in l:
         logging.debug(s)
-        l = s.split()
+        s = s.replace('Output: ','')
+        j = s.split()
         # 1064/1064    192.168.3.1  D   N  A  5060  OK (13 ms)
-        if len(l) > 6 and re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', l[1]):
-            peerIP = l[1]
+        if len(j) > 6 and re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', j[1]):
+            peerIP = j[1]
             if peerIP in endpointList:
-                extArray = l[0].split('/')
+                extArray = j[0].split('/')
                 logging.info('SIP/%s registered in Asterisk as account %s' % (peerIP, extArray[0]))
                 for endpoint in endpointList[peerIP]['accounts']:
                     if endpoint.tech == 'sip' and endpoint.account == extArray[0]:
                         endpoint.registered = True
 
-    # TODO: truncation of long account names in Elastix 3
-    r = ami.Command('iax2 show peers')
-
-    for s in r:
+    r = ami.command('iax2 show peers')
+    l = r.data.split('\n');
+    for s in l:
         logging.debug(s)
-        l = s.split()
+        s = s.replace('Output: ','')
+        j = s.split()
         # 2002   127.0.0.1  (D)  255.255.255.255  40001    OK (1 ms)
-        if len(l) > 5 and re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', l[1]) and l[5] == 'OK':
-            peerIP = l[1]
+        if len(j) > 5 and re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', j[1]) and j[5] == 'OK':
+            peerIP = j[1]
             if peerIP in endpointList:
-                logging.info('IAX2/%s registered in Asterisk as account %s' % (peerIP, l[0]))
+                logging.info('IAX2/%s registered in Asterisk as account %s' % (peerIP, j[0]))
                 for endpoint in endpointList[peerIP]['accounts']:
-                    if endpoint.tech == 'iax2' and endpoint.account == l[0]:
+                    if endpoint.tech == 'iax2' and endpoint.account == j[0]:
                         endpoint.registered = True
+
+    r = ami.command('pjsip show endpoints')
+    l = r.data.split('\n');
+    for s in l:
+        logging.debug(s)
+        s = s.replace('Output: ','')
+        j = s.split()
+        if len(j) > 4 and j[3]=='Avail':
+             z = re.match(r'\s+Contact:\s+(\d+)/sip:(\d+)@([^:]+)', s)
+             if z:
+                 peerIP = z.groups()[2]
+                 peerAccount = z.groups()[0]
+                 logging.info('PJSIP/%s registered in Asterisk with IP %s' % (peerAccount, peerIP))
+                 for endpoint in endpointList[peerIP]['accounts']:
+                     if endpoint.tech == 'pjsip' and endpoint.account == peerAccount:
+                         endpoint.registered = True
+
     amipool.put(ami)
 
 class AsteriskManagerPool(pools.Pool):
     def __init__(self, *args, **kwargs):
         pools.Pool.__init__(self, *args, **kwargs)
-        self.addr = None
         self.user = None
         self.passwd = None
-    
+        self.host = None
+
     def create(self):
-        if self.addr == None:
+        if self.host == None:
             # Load Asterisk credentials
             config = RawConfigParser()
             config.read(['/etc/asterisk/manager.conf'])
-            asteriskaddr = ['127.0.0.1', 5038]
             asteriskcred = [None, None]
+            asteriskhost = '127.0.0.1'
+            asteriskport = 5038
             for section in config.sections():
                 if section == 'general':
-                    asteriskaddr[1] = config.getint(section, 'port')
+                    asteriskport = config.getint(section, 'port')
                 else:
                     asteriskcred[0] = section
                     asteriskcred[1] = config.get(section, 'secret')
                     break
-            self.addr = tuple(asteriskaddr)
             self.user, self.passwd = asteriskcred
-        
-        return AsteriskManager.Manager(self.addr, self.user, self.passwd,
-            listen_events = False)
+
+        manager = AsteriskManager.Manager()
+        manager.connect(asteriskhost,asteriskport)
+        manager.login(self.user,self.passwd)
+        return manager
 
 if __name__ == '__main__':
     sys.exit(main())
