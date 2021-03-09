@@ -3,7 +3,7 @@
 Summary: Issabel Endpoint Configurator Module
 Name:    issabel-%{modname}
 Version: 4.0.0
-Release: 4
+Release: 5
 License: GPL
 Group:   Applications/System
 Source0: %{modname}_%{version}-%{release}.tgz
@@ -12,7 +12,7 @@ BuildArch: noarch
 Requires: issabelPBX >= 2.8.1-12
 Requires: issabel-framework >= 4.0.0-1
 Requires: issabel-agenda >= 4.0.0-1
-Requires: py-Asterisk
+Requires: pyst2-Asterisk
 Requires: python-eventlet
 Requires: python-tempita
 Requires: pyOpenSSL

@@ -180,6 +180,8 @@ class BaseEndpoint(object):
         totaltech = {'sip' : 0, 'iax2': 0}
         total= 0
         for account in accountlist:
+            if account.tech == 'pjsip':
+		        account.tech = 'sip'
             totaltech[account.tech] += 1
             total += 1
             max_tech_accounts = getattr(self, '_max_' + account.tech + '_accounts', 0)
@@ -340,6 +342,8 @@ class BaseEndpoint(object):
             'phonesrv'          :   self._buildPhoneProv(self._serverip, self._vendorname, self._authtoken_sha1),
         }
         for account in self._accounts:
+            if account.tech == 'pjsip':
+                account.tech = 'sip'
             if account.tech == 'sip':
                 vars['sip'].append(account)
         

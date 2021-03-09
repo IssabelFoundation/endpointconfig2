@@ -55,7 +55,7 @@ class Extension:
         elif self.tech != row[0]:
             logging.warning('Extension %s requested as %s but shows up in freepbx as %s' % (exten, tech, row[0]))
         else:
-            techmap = {'sip' : 'sip', 'iax2' : 'iax'}
+            techmap = {'sip' : 'sip', 'iax2' : 'iax', 'pjsip' : 'sip'}
             self.description = row[1]
             sth.execute(('SELECT keyword, data FROM asterisk.' + techmap[tech] + 
                          " WHERE id = %s AND (keyword = 'secret' OR keyword = 'account')"),
