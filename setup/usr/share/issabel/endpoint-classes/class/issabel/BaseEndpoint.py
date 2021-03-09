@@ -180,12 +180,13 @@ class BaseEndpoint(object):
         totaltech = {'sip' : 0, 'iax2': 0}
         total= 0
         for account in accountlist:
-            if account.tech == 'pjsip':
-		        account.tech = 'sip'
-            totaltech[account.tech] += 1
+            techi = account.tech
+            if techi == 'pjsip':
+                techi = 'sip'
+            totaltech[techi] += 1
             total += 1
-            max_tech_accounts = getattr(self, '_max_' + account.tech + '_accounts', 0)
-            if total <= self.max_accounts and totaltech[account.tech] <= max_tech_accounts:
+            max_tech_accounts = getattr(self, '_max_' + techi + '_accounts', 0)
+            if total <= self.max_accounts and totaltech[techi] <= max_tech_accounts:
                 self._accounts.append(account)
         for tech in totaltech:
             max_tech_accounts = getattr(self, '_max_' + tech + '_accounts', 0)
