@@ -550,7 +550,7 @@ class Endpoint(BaseEndpoint):
             return False
 
     def _rebootbyhttp(self):
-        # response = urllib2.urlopen('http://' + self._ip + '/cgi-bin//api-sys_operation?passcode=' + self._http_password + '&request=REBOOT')
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
         response = opener.open('http://' + self._ip + '/cgi-bin//api-sys_operation?passcode=' + self._http_password + '&request=REBOOT')
         jsonvars = self._parseBotchedJSONResponse(response)
         if jsonvars == None:
