@@ -555,10 +555,11 @@ class Endpoint(BaseEndpoint):
         jsonvars = self._parseBotchedJSONResponse(response)
         if jsonvars == None:
             return False 
-	if not ('response' in jsonvars and jsonvars['response'] == 'success'):
+        if not ('response' in jsonvars and jsonvars['response'] == 'success'):
             logging.error('Endpoint %s@%s unimplemented reboot by HTTP' %
                 (self._vendorname, self._ip))
             return False
+        return True
 
     def _hashTableGrandstreamConfig(self):
         stdvars = self._prepareVarList()
