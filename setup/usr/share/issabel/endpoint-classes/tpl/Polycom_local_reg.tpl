@@ -10,7 +10,7 @@
         reg.{{n}}.server.1.address="{{server_ip}}"
         reg.{{n}}.server.1.expires=""
         reg.{{n}}.server.1.expires.lineSeize="30"
-        reg.{{n}}.server.1.port="5060"
+        reg.{{n}}.server.1.port="{{extension.server_port}}"
         reg.{{n}}.server.1.register="1"
         reg.{{n}}.server.1.retryMaxCount=""
         reg.{{n}}.server.1.retryTimeOut=""
