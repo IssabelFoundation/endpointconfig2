@@ -626,6 +626,8 @@ class Endpoint(BaseEndpoint):
         # Blank out all variables prior to assignment
         for i in range(0, min(len(varmap), stdvars['max_sip_accounts'])):
             vars[varmap[i]['enable']] = 0
+            vars[varmap[i]['sipserver']] = stdvars['server_ip'] + ':' + stdvars['sip'][0].server_port
+            vars[varmap[i]['outboundproxy']] = stdvars['server_ip'] + ':' + stdvars['sip'][0].server_port
             vars[varmap[i]['sipserver']] = stdvars['server_ip']
             vars[varmap[i]['outboundproxy']] = stdvars['server_ip']
             vars[varmap[i]['accountname']] = ''
