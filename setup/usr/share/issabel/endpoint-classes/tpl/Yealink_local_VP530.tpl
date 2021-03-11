@@ -46,7 +46,7 @@ account.{{n}}.user_name = {{extension.extension}}
 #Configure the SIP server address.
 account.{{n}}.sip_server_host = {{server_ip}} 
 #Specify the port for the SIP server. The default value is 5060.
-account.{{n}}.sip_server_port = 5060
+account.{{n}}.sip_server_port = {{extension.server_port}}
 {{py:n += 1}}{{endfor}}{{for m in range(n,max_sip_accounts+1)}}
 
 #######################################################################################

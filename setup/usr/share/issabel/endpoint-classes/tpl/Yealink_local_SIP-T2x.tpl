@@ -35,6 +35,7 @@ UserName = {{extension.account}}
 AuthName = {{extension.account}}
 password = {{extension.secret}}
 SIPServerHost = {{server_ip}}
+SIPServerPort = {{extension.server_port}}
 Expire = 60
 {{py:n += 1}}{{endfor}}{{for m in range(n,max_sip_accounts)}}
 [ account ]
