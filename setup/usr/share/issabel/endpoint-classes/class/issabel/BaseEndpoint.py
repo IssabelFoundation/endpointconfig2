@@ -343,9 +343,7 @@ class BaseEndpoint(object):
             'phonesrv'          :   self._buildPhoneProv(self._serverip, self._vendorname, self._authtoken_sha1),
         }
         for account in self._accounts:
-            if account.tech == 'pjsip':
-                account.tech = 'sip'
-            if account.tech == 'sip':
+			if account.tech == 'sip' or account.tech == 'pjsip':
                 vars['sip'].append(account)
         
         # Save the auth hash NOW in order to have it available for HTTP requests
