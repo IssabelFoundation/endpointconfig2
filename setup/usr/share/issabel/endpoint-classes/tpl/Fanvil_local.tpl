@@ -44,7 +44,7 @@ P1 Voice Codec5    :23
 P1 Voice Codec6    :17
 
 <SIP CONFIG MODULE>
-SIP  Port          :{{sip[0].port}}
+SIP  Port          :{{sip[0].server_port}}
 STUN Server        :
 STUN Port          :3478
 STUN Refresh Time  :50
@@ -60,15 +60,15 @@ SIP{{n}} Phone Number  :{{extension.extension}}
 SIP{{n}} Display Name  :{{extension.description}}
 SIP{{n}} Sip Name      :{{extension.account}}
 SIP{{n}} Register Addr :{{server_ip}}
-SIP{{n}} Register Port :{{extension.port}}
+SIP{{n}} Register Port :{{extension.server_port}}
 SIP{{n}} Register User :{{extension.account}}
 SIP{{n}} Register Pswd :{{extension.secret}}
 SIP{{n}} Register TTL  :3600
 SIP{{n}} Enable Reg    :1
 SIP{{n}} Proxy Addr    :{{server_ip}}
-SIP{{n}} Proxy Port    :{{extension.port}}
+SIP{{n}} Proxy Port    :{{extension.server_port}}
 SIP{{n}} BakProxy Addr :
-SIP{{n}} BakProxy Port :{{extension.port}}
+SIP{{n}} BakProxy Port :{{extension.server_port}}
 SIP{{n}} Signal Crypto :0
 SIP{{n}} SigCrypto Key :
 SIP{{n}} Media Crypto  :0
@@ -143,15 +143,15 @@ SIP{{m}} Phone Number  :
 SIP{{m}} Display Name  :
 SIP{{m}} Sip Name      :
 SIP{{m}} Register Addr :{{server_ip}}
-SIP{{m}} Register Port :{{if extension.server_port}}{{extension.server_port}}{{else}}5060{{endif}}
+SIP{{m}} Register Port :{{extension.server_port}}
 SIP{{m}} Register User :
 SIP{{m}} Register Pswd :
 SIP{{m}} Register TTL  :3600
 SIP{{m}} Enable Reg    :0
 SIP{{m}} Proxy Addr    :{{server_ip}}
-SIP{{m}} Proxy Port    :{{if extension.server_port}}{{extension.server_port}}{{else}}5060{{endif}}
+SIP{{m}} Proxy Port    :{{extension.server_port}}
 SIP{{m}} BakProxy Addr :
-SIP{{m}} BakProxy Port :{{if extension.server_port}}{{extension.server_port}}{{else}}5060{{endif}}
+SIP{{m}} BakProxy Port :{{extension.server_port}}
 SIP{{m}} Signal Crypto :0
 SIP{{m}} SigCrypto Key :
 SIP{{m}} Media Crypto  :0
