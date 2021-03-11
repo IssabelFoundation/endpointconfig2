@@ -4,19 +4,19 @@
 proxy1_address: "{{server_ip}}"
 
 # Proxy Server Port (default - 5060)
-proxy1_port:"5060"
+proxy1_port:"{{sip[0].server_port}}"
 
 # Emergency Proxy info
 proxy_emergency: "{{server_ip}}"
-proxy_emergency_port: "5060"
+proxy_emergency_port: "{{sip[0].server_port}}"
 
 # Backup Proxy info
 proxy_backup: "{{server_ip}}"
-proxy_backup_port: "5060"
+proxy_backup_port: "{{sip[0].server_port}}"
 
 # Outbound Proxy info
 outbound_proxy: "{{server_ip}}"
-outbound_proxy_port: "5060"
+outbound_proxy_port: "{{sip[0].server_port}}"
 
 phone_label: "{{sip[0].description}}"
 
