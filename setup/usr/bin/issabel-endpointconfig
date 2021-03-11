@@ -496,10 +496,11 @@ def queryRegisteredAccounts(amipool, endpointList):
              if z:
                  peerIP = z.groups()[2]
                  peerAccount = z.groups()[0]
-                 logging.info('PJSIP/%s registered in Asterisk with IP %s' % (peerAccount, peerIP))
-                 for endpoint in endpointList[peerIP]['accounts']:
-                     if endpoint.tech == 'pjsip' and endpoint.account == peerAccount:
-                         endpoint.registered = True
+                 if peerIP in endpointList:
+                     logging.info('PJSIP/%s registered in Asterisk with IP %s' % (peerAccount, peerIP))
+                     for endpoint in endpointList[peerIP]['accounts']:
+                         if endpoint.tech == 'pjsip' and endpoint.account == peerAccount:
+                             endpoint.registered = True
 
     amipool.put(ami)
 
