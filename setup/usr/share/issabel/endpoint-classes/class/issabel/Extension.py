@@ -69,24 +69,24 @@ class Extension:
                         " 'bindport' limit 1")
             row = sth.fetchone()
             if row is None:
-                setattr(self, 'port', '5060')
+                setattr(self, 'server_port', '5060')
             else:
-                setattr(self, 'port', row[0])
+                setattr(self, 'server_port', row[0])
         elif tech == 'pjsip':
             sth.execute('SELECT data from asterisk.pjsipsettings where keyword =' +
                         " 'bindport' limit 1")
             row = sth.fetchone()
             if row is None:
-                setattr(self, 'port', '5066')
+                setattr(self, 'server_port', '5066')
             else:
-                setattr(self, 'port', row[0])
+                setattr(self, 'server_port', row[0])
         elif tech == 'iax2':
             sth.execute('SELECT data from asterisk.iaxsettings where keyword =' +
                         " 'bindport' limit 1")
             if row is None:
-                setattr(self, 'port', '4569')
+                setattr(self, 'server_port', '4569')
             else:
-                setattr(self, 'port', row[0])
+                setattr(self, 'server_port', row[0])
         sth.execute(
             'SELECT property_key, property_value ' +
             'FROM endpoint_account_properties, endpoint_account ' +
