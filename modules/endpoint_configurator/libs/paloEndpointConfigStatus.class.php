@@ -6,6 +6,7 @@
   | Issabel version 1.0                                                  |
   | http://www.issabel.org                                               |
   +----------------------------------------------------------------------+
+  | Copyright (c) 2021 Issabel Foundation                                |
   | Copyright (c) 2006 Palosanto Solutions S. A.                         |
   +----------------------------------------------------------------------+
   | The contents of this file are subject to the General Public License  |
@@ -20,7 +21,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
+  $Id: paloEndpointConfigStatus.class.php, Thu 20 May 2021 08:30:39 AM EDT, nicolas@issabel.com
 */
 
 /*
@@ -40,7 +41,7 @@ class paloEndpointConfigStatus extends paloInterfaceSSE
     private $_db = NULL;
     private $_logfd = NULL;
 
-    function paloEndpointConfigStatus()
+    function __construct()
     {
         $dsn = generarDSNSistema('asteriskuser', 'endpointconfig');
         $this->_db = new paloDB($dsn);

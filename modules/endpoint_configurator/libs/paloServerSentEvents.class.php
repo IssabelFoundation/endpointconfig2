@@ -6,6 +6,7 @@
   | Issabel version 1.0                                                  |
   | http://www.issabel.org                                               |
   +----------------------------------------------------------------------+
+  | Copyright (c) 2021 Issabel Foundation                                |
   | Copyright (c) 2006 Palosanto Solutions S. A.                         |
   +----------------------------------------------------------------------+
   | The contents of this file are subject to the General Public License  |
@@ -20,7 +21,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
+  $Id: paloServerSentEvents.class.php, Thu 20 May 2021 08:29:54 AM EDT, nicolas@issabel.com
 */
 require_once 'libs/misc.lib.php';
 require_once 'libs/paloSantoJSON.class.php';
@@ -38,7 +39,7 @@ class paloServerSentEvents
     	}
     }
     
-    function paloServerSentEvents($module_name, $implClass)
+    function __construct($module_name, $implClass)
     {
         $this->_module_name = $module_name;
         if (is_object($implClass)) {

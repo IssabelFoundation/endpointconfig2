@@ -3,9 +3,10 @@
   vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
   Codificación: UTF-8
   +----------------------------------------------------------------------+
-  | Issabel version 1.0                                                  |
+  | Issabel version 4.0                                                  |
   | http://www.issabel.org                                               |
   +----------------------------------------------------------------------+
+  | Copyright (c) 2021 Issabel Foundation                                |
   | Copyright (c) 2006 Palosanto Solutions S. A.                         |
   +----------------------------------------------------------------------+
   | The contents of this file are subject to the General Public License  |
@@ -20,7 +21,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
+  $Id: paloEndpointScanStatus.class.php, Thu 20 May 2021 08:29:23 AM EDT, nicolas@issabel.com
 */
 
 /*
@@ -42,7 +43,7 @@ class paloEndpointScanStatus extends paloInterfaceSSE
     private $_listaRegistros = array();
 
     // Constructor - abrir conexión a base de datos    
-    function paloEndpointScanStatus()
+    function __construct()
     {
         $dsn = generarDSNSistema('asteriskuser', 'endpointconfig');
         $this->_db = new paloDB($dsn);
