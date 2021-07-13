@@ -1,0 +1,16 @@
+--- setup/usr/share/issabel/privileged/detect_endpoints.orig	2021-07-13 23:57:02.827711413 +0200
++++ setup/usr/share/issabel/privileged/detect_endpoints	2021-07-13 23:38:12.648201743 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python3
+ # vim: set fileencoding=utf-8 :
+ # vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+ # Codificación: UTF-8
+--- setup/usr/bin/issabel-endpointconfig.orig	2021-07-13 23:56:53.041282839 +0200
++++ setup/usr/bin/issabel-endpointconfig	2021-07-13 23:37:04.316219396 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python3
+ # vim: set fileencoding=utf-8 :
+ # vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+ # Codificación: UTF-8
