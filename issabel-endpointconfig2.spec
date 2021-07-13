@@ -1,12 +1,17 @@
 %define modname endpointconfig2
 
+%if 0%{?rhel} == 7
+ %define dist .el7
+%endif
+
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 4.0.0
-Release: 5
+Release: 5%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
+Patch0: centos8-endpointconfig.diff
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildArch: noarch
 Requires: issabelPBX >= 2.8.1-12
@@ -61,6 +66,10 @@ For developers:
 
 %prep
 %setup -n %{name}-%{version}
+
+%if 0%{?rhel} == 8
+%patch0 -p0
+%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
