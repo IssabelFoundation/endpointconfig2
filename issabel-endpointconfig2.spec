@@ -18,16 +18,26 @@ Requires: issabelPBX >= 2.8.1-12
 Requires: issabel-framework >= 4.0.0-1
 Requires: issabel-agenda >= 4.0.0-1
 Requires: pyst2-Asterisk
-Requires: python-eventlet
-Requires: python-tempita
-Requires: pyOpenSSL
-Requires: python-daemon
 Requires: MySQL-python
 Requires: python-cjson
 Requires: php-simplepie
-Requires: python-paramiko >= 1.7.6-2
 Requires: nmap
-Requires(pre): tftp-server
+Requires: tftp-server
+
+%if 0%{?rhel} == 7
+Requires: python-paramiko >= 1.7.6-2
+Requires: python-tempita
+Requires: python-eventlet
+Requires: python-daemon
+Requires: pyOpenSSL
+%else
+Requires: python3-paramiko
+Requires: python3-tempita
+Requires: python3-eventlet
+Requires: python3-daemon
+Requires: python3-pyOpenSSL
+%endif
+
 Conflicts: elastix-pbx <= 2.4.0-15
 
 Obsoletes: elastix-endpointconfig2
