@@ -110,3 +110,27 @@ INSERT INTO `model_properties` (`id_model`, `property_key`, `property_value`) VA
 ((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "CiscoSPA" AND model.name = "SPA303G"), 'max_iax2_accounts', '0'),
 ((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "CiscoSPA" AND model.name = "SPA303G"), 'http_username', 'admin'),
 ((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "CiscoSPA" AND model.name = "SPA303G"), 'http_password', '22222');
+
+/* Creación del fabricante Cisco 797X */
+INSERT INTO `manufacturer` (`name`, `description`) VALUES ('Cisco797X', 'Cisco797X');
+
+INSERT INTO `mac_prefix` (`id_manufacturer`, `mac_prefix`, `description`) VALUES
+((SELECT `id` FROM manufacturer WHERE `name` = "Cisco797X"), '00:1F:6C', 'Cisco SPA7961G'),
+((SELECT `id` FROM manufacturer WHERE `name` = "Cisco797X"), '00:1F:9E', 'Cisco SPA7961G'),
+((SELECT `id` FROM manufacturer WHERE `name` = "Cisco797X"), '00:E1:6D', 'Cisco SPA9951');
+
+/* Modelos asociados a Cisco797X */
+INSERT INTO `model` (`id_manufacturer`, `name`, `description`, `max_accounts`, `static_ip_supported`, `dynamic_ip_supported`, `static_prov_supported`) VALUES
+((SELECT `id` FROM manufacturer WHERE `name` = "Cisco797X"), 'SPA7961G', 'SPA7961G', '3', '1', '1', '0'),
+((SELECT `id` FROM manufacturer WHERE `name` = "Cisco797X"), 'SPA9951', 'SPA9951', '3', '1', '1', '0');
+
+/* Propiedades de los modelos Cisco 797X */
+INSERT INTO `model_properties` (`id_model`, `property_key`, `property_value`) VALUES
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA7961G"), 'max_sip_accounts', '3'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA7961G"), 'max_iax2_accounts', '0'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA7961G"), 'http_username', 'admin'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA7961G"), 'http_password', 'cisco'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA9951"), 'max_sip_accounts', '3'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA9951"), 'max_iax2_accounts', '0'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA9951"), 'http_username', 'admin'),
+((SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco797X" AND model.name = "SPA9951"), 'http_password', 'cisco');
