@@ -76,7 +76,7 @@ class Endpoint(BaseEndpoint):
             return False
 
         # Need to calculate lowercase version of MAC address without colons
-        sConfigFile = 'SPA' + (self._mac.replace(':', '').upper()) + '.cnf.xml'
+        sConfigFile = 'SEP' + (self._mac.replace(':', '').upper()) + '.cnf.xml'
         sConfigPath = self._tftpdir + '/' + sConfigFile
         vars = self._prepareVarList()
         vars['config_filename'] = sConfigFile
