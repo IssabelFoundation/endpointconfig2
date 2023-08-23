@@ -1,0 +1,6 @@
+<DIALTEMPLATE>
+  <!-- Dial immediatly after presing #  -->
+  <TEMPLATE MATCH="*#" TIMEOUT="0" Rewrite="%1" />
+  <!-- Anything else. Wait 4 seconds, then dial -->
+  <TEMPLATE MATCH="*" TIMEOUT="4" />
+</DIALTEMPLATE>
