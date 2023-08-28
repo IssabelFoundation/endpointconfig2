@@ -40,6 +40,9 @@ class Endpoint(BaseEndpoint):
     
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
         BaseEndpoint.__init__(self, 'Cisco', amipool, dbpool, sServerIP, sIP, mac)
+        
+        self._timeZone = "SA Eastern Standard Time"
+
         if Endpoint._global_serverip == None:
             Endpoint._global_serverip = sServerIP
         elif Endpoint._global_serverip != sServerIP:
@@ -49,50 +52,80 @@ class Endpoint(BaseEndpoint):
 
     # TODO: might be possible to derive model from MAC range, requires database change
 
+
+    def setExtraParameters(self, param):
+        if not BaseEndpoint.setExtraParameters(self, param): return False
+        if 'timeZone' in param: self._timeZone = param['timeZone']
+        return True
+
+
     def probeModel(self):
         ''' Probe specific model of the Cisco phone
         
-        This probe only works if the phone has access to a configuration that
-        enables telnet.
+        This probe first tries to get the model using telnet. If that fails, 
+        it falls back to extracting the model from the web page.
         '''
+        sModel = None
+        
+        sModel = self._probeModelTelnet()
+        
+        if not sModel:
+            sModel = self._probeModelWeb()
+
+        if sModel:
+            self._saveModel(sModel)
+
+
+    def _probeModelTelnet(self):
+        '''Probe specific model of the Cisco phone using telnet'''
+        sModel = None
         try:
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
-        except socket.timeout, e:
-            logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
-                (self._vendorname, self._ip, str(e)))
-            return
-        except socket.error, e:
-            logging.error('Endpoint %s@%s failed to telnet - %s' %
-                (self._vendorname, self._ip, str(e)))
-            return
-
-        sModel = None
-
-        try:
+        
             # Attempt login with default credentials
             telnet.read_until('Password :', 10)
             telnet.write('cisco\r\n') # Password            
             
             idx, m, text = telnet.expect([r'Password :', r'> '], 10)
             if idx == 0:
-                # Login failed
-                telnet.close()
-                return
+                raise Exception('Telnet login failed.')
+
             telnet.write('show config\r\n')
             text = telnet.read_until('> ', 10)
             telnet.write('exit\r\n')
-            telnet.close()
             
             m = re.search(r'IP Phone CP-(\w+)', text)
-            if m != None: sModel = m.group(1)
-        except socket.error, e:
+            if m:
+                sModel = m.group(1)
+        
+        except Exception, e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
-            return False
+        finally:
+            telnet.close()
+
+        return sModel
+
+    
+    def _probeModelWeb(self):
+        '''Probe specific model of the Cisco phone from its web page'''
+        sModel = None
+        try:
+            response = urllib2.urlopen('http://' + self._ip + '/')
+            htmlbody = response.read()
+
+            # Search for the text that contains the Cisco phone model
+            model_match = re.search(r'IP Phone CP-(\w+)', htmlbody, re.IGNORECASE)
+
+            if model_match:
+                sModel = model_match.group(1)
+        except Exception, e:
+            logging.error('Endpoint %s@%s web connection failure - %s' %
+                (self._vendorname, self._ip, str(e)))
         
-        if sModel != None: self._saveModel(sModel)
+        return sModel
         
 
     @staticmethod
@@ -125,28 +158,47 @@ class Endpoint(BaseEndpoint):
             logging.error('Failed to write global config for Cisco - %s' % (str(e),))
             return False
 
+
     def updateLocalConfig(self):
-        '''Configuration for Cisco endpoints (local)
+        '''Update local configuration for Cisco endpoints
+
+        The function generates the configuration file for Cisco endpoints based on the phone's MAC address.
         
-        The file SIPXXXXXXXXXXXX.cnf contains the SIP configuration. Here 
-        XXXXXXXXXXXX is replaced by the UPPERCASE MAC address of the phone.
+        For XML compatible models, the configuration file is named SEPXXXXXXXXXXXX.cnf.xml,
+        where XXXXXXXXXXXX is the UPPERCASE MAC address of the phone.
         
+        For XML incompatible models, the configuration file is named SIPXXXXXXXXXXXX.cnf,
+        following the same MAC address format.
+
         To reboot the phone, it is necessary to issue the AMI command:
         sip notify cisco-check-cfg {$EXTENSION}. Verified with Cisco 7960.
         '''
-        # Check that there is at least one account to configure
-        if len(self._accounts) <= 0:
-            logging.error('Endpoint %s@%s has no accounts to configure' %
-                (self._vendorname, self._ip))
-            return False
-
-        # Need to calculate UPPERCASE version of MAC address without colons
-        sConfigFile = 'SIP' + (self._mac.replace(':', '').upper()) + '.cnf'
-        sConfigPath = self._tftpdir + '/' + sConfigFile
-        vars = self._prepareVarList()
         try:
-            self._writeTemplate('Cisco_local_SIP.tpl', vars, sConfigPath)
-            
+            # Check that there is at least one account to configure
+            if not self._accounts:
+                raise ValueError('Endpoint %s@%s has no accounts to configure' %
+                    (self._vendorname, self._ip))
+
+            # Need to calculate UPPERCASE version of MAC address without colons
+            uppercase_mac = self._mac.replace(':', '').upper()
+            config_file_name ='SEP' + uppercase_mac + '.cnf.xml'
+            config_file_template = 'Cisco_local_SEP.tpl'
+
+            if self._is_xml_incompatible():
+                config_file_name = 'SIP' + uppercase_mac + '.cnf'
+                config_file_template = 'Cisco_local_SIP.tpl'
+        
+            config_file_path = self._tftpdir + '/' + config_file_name
+
+            vars = self._prepareVarList()
+            vars.update({
+            'timeZone':self._timeZone,
+            'server_port':5060
+		    })
+
+
+            self._writeTemplate(config_file_template, vars, config_file_path)
+
             # Must execute cisco-check-cfg with extension, not IP
             if self._hasRegisteredExtension():
                 self._amireboot('cisco-check-cfg')
@@ -160,6 +212,18 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
+        except Exception, e:
+            logging.error('Endpoint %s@%s failed to update local configuration - %s' %
+                      (self._vendorname, self._ip, str(e)))
+        return False
+
+    def _is_xml_incompatible(self):
+        # Implement logic to determine if the model is XML incompatible
+        # For example, check the model name or model number
+        # Return True for Cisco models that are XML incompatible, False otherwise
+        # For demonstration purposes, assuming models 7960 and 7940 are XML incompatible
+        # return self._model in ['7960', '7940']
+        return False 
 
     def _rebootbytelnet(self):
         '''Start reboot of Cisco phone by telnet'''
