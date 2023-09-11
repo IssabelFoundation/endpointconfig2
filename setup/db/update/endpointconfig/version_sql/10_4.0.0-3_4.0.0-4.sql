@@ -43,7 +43,6 @@ INSERT INTO `model` (`max_accounts`, `static_ip_supported`, `dynamic_ip_supporte
 (2, 0, 1, 0, "7942", "Cisco - 7942", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco")),
 (2, 0, 1, 0, "7945G", "Cisco - 7945G", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco")), 
 (2, 0, 1, 0, "7962", "Cisco - 7962", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco")),
-(8, 0, 1, 0, "7970", "Cisco - 7970", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco")),
 (8, 0, 1, 0, "7975G", "Cisco - 7975G", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco")),
 (5, 0, 1, 0, "8851", "Cisco - 8851", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco")),
 (5, 0, 1, 0, "8865", "Cisco - 8865", (SELECT `id` FROM manufacturer WHERE `name` = "Cisco"))
@@ -60,8 +59,6 @@ INSERT INTO `model_properties` (`property_key`, `property_value`, `id_model`) VA
 ("max_iax2_accounts", "0", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7945")),
 ("max_sip_accounts", "2", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7962")),
 ("max_iax2_accounts", "0", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7962")),
-("max_sip_accounts", "8", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7970")),
-("max_iax2_accounts", "0", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7970")),
 ("max_sip_accounts", "8", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7975G")),
 ("max_iax2_accounts", "0", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "7975G")),
 ("max_sip_accounts", "5", (SELECT model.id FROM manufacturer, model WHERE manufacturer.id = model.id_manufacturer AND manufacturer.name = "Cisco" AND model.name = "8851")),
