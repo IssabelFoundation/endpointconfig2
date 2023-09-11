@@ -14,9 +14,8 @@ Source0: issabel-%{modname}-%{version}.tar.gz
 Patch0: centos8-endpointconfig.diff
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildArch: noarch
-Requires: issabelPBX >= 2.8.1-12
-Requires: issabel-framework >= 4.0.0-1
-Requires: issabel-agenda >= 4.0.0-1
+Requires: issabel-framework >= 5.0.0-1
+Requires: issabel-agenda >= 5.0.0-1
 Requires: pyst2-Asterisk
 Requires: MySQL-python
 Requires: python-cjson
