@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `model`
 CREATE TABLE IF NOT EXISTS `model_properties`
 (
     `id`                INT UNSIGNED    NOT NULL    auto_increment,
-    `id_model`          INT UNSIGNED    NOT NULL,
+    `id_model`          INT UNSIGNED    NOT NULL DEFAULT "0",
     `property_key`      VARCHAR(128)    NOT NULL,
     `property_value`    TEXT            NOT NULL,
     
