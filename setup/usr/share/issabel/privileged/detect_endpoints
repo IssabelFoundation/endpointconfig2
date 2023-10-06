@@ -294,11 +294,11 @@ def list_mac_ips(dbpool, netmask):
 			if dataready:
 				s = r.stdout.readline()
 				if s == '' and not running: break
-				m = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', s)
-				if m != None: ip = m.group(1)
-				m = re.search(r'MAC Address: (.*) \((.*)\)', s)
+				m = re.search(b'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', s)
+				if m != None: ip = m.group(1).decode('utf-8')
+				m = re.search(b'MAC Address: (.*) \((.*)\)', s)
 				if m != None:
-					mac = m.group(1)
+					mac = m.group(1).decode('utf-8')
 					if mac[:8] in macprefix:
 						try:
 							process_endpoint(dbpool, ip, mac, macprefix[mac[:8]])
