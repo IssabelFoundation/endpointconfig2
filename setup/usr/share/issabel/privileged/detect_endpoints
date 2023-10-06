@@ -152,14 +152,14 @@ def get_database_credentials():
 		dbcred = [None, None]
 		for s in f:
 			m = re.match(r'AMPDBUSER\s*=\s*(.+)', s)
-			if m != None:
+			if m is not None:
 				dbcred[0] = m.group(1)
 			m = re.match(r'AMPDBPASS\s*=\s*(.+)', s)
-			if m != None:
+			if m is not None:
 				dbcred[1] = m.group(1)
-			if dbcred[0] != None and dbcred[1] != None: break
+			if dbcred[0] is not None and dbcred[1] is not None: break
 		f.close()
-		if dbcred[0] != None and dbcred[1] != None:
+		if dbcred[0] is not None and dbcred[1] is not None:
 			return dbcred
 		else:
 			return None
@@ -276,7 +276,8 @@ def list_mac_ips(dbpool, netmask):
 		dbpool.put(dbconn)
 	except MySQLdb.Error as e:
 		sys.stderr.write('ERR: failed to load MAC prefixes: ' + str(e) + '\n')
-		if dbconn != None: dbpool.put(dbconn)
+		if dbconn is not None:
+			dbpool.put(dbconn)
 		return
 	dbconn = None
 	
@@ -287,17 +288,19 @@ def list_mac_ips(dbpool, netmask):
 		while True:
 			rd,wr,er = select.select([r.stdout], [], [], 0.1)
 			dataready = (len(rd) > 0)
-			running = (r.poll() == None)
+			running = (r.poll() is None)
 			
 			if not (running or dataready): break
 			
 			if dataready:
 				s = r.stdout.readline()
-				if s == '' and not running: break
+				if s == b'' and not running:
+					break
 				m = re.search(b'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', s)
-				if m != None: ip = m.group(1).decode('utf-8')
+				if m is not None:
+					ip = m.group(1).decode('utf-8')
 				m = re.search(b'MAC Address: (.*) \((.*)\)', s)
-				if m != None:
+				if m is not None:
 					mac = m.group(1).decode('utf-8')
 					if mac[:8] in macprefix:
 						try:
@@ -324,7 +327,7 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 		changeset = set()
 		
 		# Query the class of the manufacturer for later probing
-		if not manufacturerid in endpointClasses:
+		if manufacturerid not in endpointClasses:
 			sth.execute('SELECT name FROM manufacturer WHERE id = %s', (manufacturerid,))
 			row = sth.fetchone()
 			manufacturername = row[0]
@@ -337,7 +340,7 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 				endpointClasses[manufacturerid] = None
 		
 		# Remove any entry with IP collision and a different MAC
-		if mac != None:
+		if mac is not None:
 			sqlquery = 'SELECT id FROM endpoint '\
 				'WHERE endpoint.last_known_ipv4 = %s '\
 				'AND ((id_manufacturer <> %s AND endpoint.mac_address IS NULL) '\
@@ -356,7 +359,7 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 			changeset.add(('delete', id_endpoint))
 		
 		id_endpoint = None
-		if mac != None:
+		if mac is not None:
 			# If the MAC matches, assume it is the same endpoint, and update the IP		
 			sth.execute('SELECT id FROM endpoint WHERE endpoint.mac_address = %s', (mac,))
 			rows = sth.fetchall()
@@ -372,7 +375,7 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 		
 		# Read the ID of any entry with a matching IP address. There should be
 		# only one.
-		if id_endpoint == None:
+		if id_endpoint is None:
 			sth.execute('SELECT id FROM endpoint WHERE endpoint.last_known_ipv4 = %s', (ip,))
 			rows = sth.fetchall()
 			if len(rows) > 0:
@@ -402,14 +405,14 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 			broadcast_change(tuple)
 		
 		# Try to probe the model of the discovered phone
-		if endpointClasses[manufacturerid] != None:
+		if endpointClasses[manufacturerid] is not None:
 			eclass = endpointClasses[manufacturerid]
 			endpoint = eclass(None, dbpool, None, ip, mac)
 			gpool.spawn_n(probe_model, endpoint, id_endpoint)
 		
 	except MySQLdb.Error as e:
-		if dbconn != None: dbpool.put(dbconn)
-		raise(e)
+		if dbconn is not None: dbpool.put(dbconn)
+		raise e
 
 def broadcast_change(tuple):
 	global clients
