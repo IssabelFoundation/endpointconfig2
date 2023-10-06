@@ -31,7 +31,7 @@ import re
 import urllib3
 from eventlet.green import os, socket, urllib, time
 import errno
-import sha
+import hashlib
 import random
 from os.path import isfile
 from datetime import datetime
@@ -326,8 +326,8 @@ class BaseEndpoint(object):
     
     def _prepareVarList(self):
         '''Prepare list of common variables to substitute in template '''
-        
-        hash = sha.new()
+       
+        hash = hashlib.sha1()
         hash.update(self._vendorname + self._model + self._serverip + self._ip + str(random.randint(0, 1024 * 1024 * 1024)))
         self._authtoken_sha1 = hash.hexdigest()
         
