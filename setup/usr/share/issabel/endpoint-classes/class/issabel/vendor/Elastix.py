@@ -28,7 +28,8 @@
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Grandstream
-from eventlet.green import socket, urllib2, urllib
+import urllib3
+from eventlet.green import socket, urllib
 import cookielib
 import re
 import time
@@ -45,14 +46,14 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             entered on non-Grandstream models (LXP-180) '''
         sModel = None
         try:
-            response = urllib2.urlopen('http://' + self._ip + '/')
+            response = urllib3.urlopen('http://' + self._ip + '/')
             htmlbody = response.read()
-        except urllib2.HTTPError, e:
+        except urllib3.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Base station"', e.headers['WWW-Authenticate'])
                 if m != None:
                     sModel = 'LXP180'
-        except Exception, e:
+        except Exception as e:
             pass
 
         if  sModel == None and 'fcgi/do?id=1' in htmlbody:
@@ -66,7 +67,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                             sModel = 'LXP150'
                         if m.group(1) == 'SP-R53':
                             sModel = 'LXP250'
-            except Exception, e:
+            except Exception as e:
                 logging.error('Endpoint %s@%s LXPx50 failed to authenticate - %s' %
                 (self._vendorname, self._ip, str(e)))
                 
@@ -235,7 +236,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             '/', False, False, str((int)(time.time() + 3600)),
             False, 'SessionId', None, None)        
         cookiejar.set_cookie(sesscookie)
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+        opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
         response = opener.open('http://' + self._ip + '/fcgi/do?' + urllib.urlencode({
             'action': 'Encrypt',
             'UserName' : http_user,
@@ -294,7 +295,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                 # Failed to authenticate
                 os.remove(sConfigPath)
                 return False
-        except Exception, e:
+        except Exception as e:
             logging.error('Endpoint %s@%s LXPx50 failed to authenticate - %s' %
                 (self._vendorname, self._ip, str(e)))
             os.remove(sConfigPath)
@@ -318,7 +319,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                 cfgcontent + '\r\n' +\
                 '--' + boundary + '--\r\n'
             
-            request = urllib2.Request(
+            request = urllib3.Request(
                 'http://' + self._ip + '/fcgi/do?id=6&id=2',
                 postdata,
                 {'Content-Type': ' multipart/form-data; boundary=' + boundary})
@@ -337,11 +338,11 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                         (self._vendorname, self._ip))
                 os.remove(sConfigPath)
                 return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
-        except urllib2.HTTPError, e:
+        except urllib3.HTTPError as e:
             logging.error('Endpoint %s@%s unable to send file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

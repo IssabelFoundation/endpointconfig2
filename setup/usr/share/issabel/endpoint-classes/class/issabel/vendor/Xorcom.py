@@ -54,7 +54,7 @@ class Endpoint(BaseEndpoint):
         vars = self._prepareVarList()
         try:
             self._writeTemplate('Xorcom_local_cfg.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

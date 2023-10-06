@@ -28,7 +28,8 @@
 import logging
 import tempita
 import re
-from eventlet.green import os, socket, urllib2, urllib, time
+import urllib3
+from eventlet.green import os, socket, urllib, time
 import errno
 import sha
 import random
@@ -264,7 +265,7 @@ class BaseEndpoint(object):
                 logging.warning('Endpoint %s@%s failed to save unknown vendor "%s"' %
                         (self._vendorname, self._ip, sModel))
             self._dbpool.put(dbconn)
-        except MySQLdb.Error, e:
+        except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to query database - %s' %
                 (self._vendorname, self._ip, str(e)))
             if dbconn != None: dbpool.put(dbconn)
@@ -291,7 +292,7 @@ class BaseEndpoint(object):
                 logging.warning('Endpoint %s@%s failed to save unknown model "%s"' %
                         (self._vendorname, self._ip, sModel))
             self._dbpool.put(dbconn)
-        except MySQLdb.Error, e:
+        except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to query database - %s' %
                 (self._vendorname, self._ip, str(e)))
             if dbconn != None: 
@@ -316,7 +317,7 @@ class BaseEndpoint(object):
             sth.close()
             dbconn.commit()
             self._dbpool.put(dbconn)
-        except MySQLdb.Error, e:
+        except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to save configured status - %s' %
                 (self._vendorname, self._ip, str(e)))
             if dbconn != None:
@@ -361,7 +362,7 @@ class BaseEndpoint(object):
             sth.close()
             dbconn.commit()
             self._dbpool.put(dbconn)
-        except MySQLdb.Error, e:
+        except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to save authtoken - %s' %
                 (self._vendorname, self._ip, str(e)))
             if dbconn != None:
@@ -383,27 +384,27 @@ class BaseEndpoint(object):
         This method is frequently used to make the phone use the Elastix server
         as the TFTP source for autoprovisioning.
         ''' 
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, 'http://' + self._ip + '/',
             self._http_username, self._http_password)
-        basic_auth_handler = urllib2.HTTPBasicAuthHandler(password_manager)
-        digest_auth_handler = urllib2.HTTPDigestAuthHandler(password_manager)
-        opener = urllib2.build_opener(basic_auth_handler, digest_auth_handler)
+        basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
+        digest_auth_handler = urllib3.HTTPDigestAuthHandler(password_manager)
+        opener = urllib3.build_opener(basic_auth_handler, digest_auth_handler)
         if postvars != None:
             opener.addheaders = [('Content-Type', 'application/x-www-form-urlencoded')]
             if not isinstance(postvars, str):
                 postvars = urllib.urlencode(postvars)
         try:
             opener.open('http://' + self._ip + urlpath, postvars)
-        except urllib2.HTTPError, e:
+        except urllib3.HTTPError as e:
             logging.error('Endpoint %s@%s failed to authenticate - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except urllib2.URLError, e:
+        except urllib3.URLError as e:
             logging.error('Endpoint %s@%s failed to authenticate - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -430,7 +431,7 @@ class BaseEndpoint(object):
         # Unlink before overwrite to cope with Backup/Restore restoring as root
         try:
             os.unlink(filepath)
-        except OSError, e:
+        except OSError as e:
             # swallow "no such file", re-raise anything else
             if e.errno != errno.ENOENT: raise e
         f = open(filepath, 'w')

@@ -28,7 +28,8 @@
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
 import eventlet
-from eventlet.green import socket, os, urllib2
+import urllib3
+from eventlet.green import socket, os
 import errno
 import re
 from xml.dom.minidom import parse
@@ -57,11 +58,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return
@@ -87,7 +88,7 @@ class Endpoint(BaseEndpoint):
             
             m = re.search(r'type=(\w+)', text)
             if m != None: sModel = m.group(1)
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -97,11 +98,11 @@ class Endpoint(BaseEndpoint):
         if sModel == None:
             http_username = 'root'
             http_password = 'root'
-            password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(None, 'http://' + self._ip + '/',
                 http_username, http_password)
-            basic_auth_handler = urllib2.HTTPBasicAuthHandler(password_manager)
-            opener = urllib2.build_opener(basic_auth_handler)
+            basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
+            opener = urllib3.build_opener(basic_auth_handler)
             try:
                 response = opener.open('http://' + self._ip + '/overview.asp')
                 htmlbody = response.read()
@@ -114,7 +115,7 @@ class Endpoint(BaseEndpoint):
                 if m != None:
                     self._saveVendor('RCA')
                     sModel = m.group(1)
-            except Exception, e:
+            except Exception as e:
                 pass
         
         if sModel != None: self._saveModel(sModel)
@@ -155,11 +156,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return
@@ -191,7 +192,7 @@ class Endpoint(BaseEndpoint):
                     telnet.write(cmd.encode() + '\r\n')
                     idx, m, text = telnet.expect([r'# '], 10)
                 telnet.close()
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -248,7 +249,7 @@ class Endpoint(BaseEndpoint):
         
         try:
             self._writeContent(sConfigPath, dom.toxml())
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -273,7 +274,7 @@ class Endpoint(BaseEndpoint):
         
         try:
             self._writeContent(sConfigPath, dom.toxml())
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

@@ -27,8 +27,9 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
+import urllib3
 import eventlet
-from eventlet.green import socket, urllib2, urllib
+from eventlet.green import socket, urllib
 import cjson
 from issabel.BaseEndpoint import BaseEndpoint
 
@@ -44,13 +45,13 @@ class Endpoint(BaseEndpoint):
         '''
         sModel = None
         try:
-            response = urllib2.urlopen('http://' + self._ip + ':8080/index.htm')
+            response = urllib3.urlopen('http://' + self._ip + ':8080/index.htm')
             htmlbody = response.read()
             if response.code == 200:
                 # <title>ICW-1000</title>
                 m = re.search(r'<title>(ICW-\w+)</title>', htmlbody, re.IGNORECASE)
                 if m != None: sModel = m.group(1)
-        except Exception, e:
+        except Exception as e:
             pass
 
         if sModel != None: self._saveModel(sModel)
@@ -106,12 +107,12 @@ class Endpoint(BaseEndpoint):
 
         try:
             # Login into interface
-            response = urllib2.urlopen('http://' + self._ip + ':8080/s_login.htm',
+            response = urllib3.urlopen('http://' + self._ip + ':8080/s_login.htm',
                 urllib.urlencode({'id' : self._http_username, 'password' : self._http_password}))
             body = response.read()
 
             # The body is JSON but Content-Type is set to text/plain
-            response = urllib2.urlopen('http://' + self._ip + ':8080/xpdb.uds?mode=list&db=config')
+            response = urllib3.urlopen('http://' + self._ip + ':8080/xpdb.uds?mode=list&db=config')
             body = response.read()
             jsonvars = cjson.decode(body)
 
@@ -182,7 +183,7 @@ class Endpoint(BaseEndpoint):
             postvars.update({'cnt': postvar_count})
 
             # Send updated variables
-            response = urllib2.urlopen('http://' + self._ip + ':8080/xpdb.uds',
+            response = urllib3.urlopen('http://' + self._ip + ':8080/xpdb.uds',
                 urllib.urlencode(postvars))
             body = response.read()
 
@@ -201,26 +202,26 @@ class Endpoint(BaseEndpoint):
                     postvar_count += 5
                 postvars.update({'cnt': postvar_count})
                 # Send updated variables
-                response = urllib2.urlopen('http://' + self._ip + ':8080/xpdb.uds',
+                response = urllib3.urlopen('http://' + self._ip + ':8080/xpdb.uds',
                     urllib.urlencode(postvars))
                 body = response.read()
 
             # Reiniciar el teléfono
-            response = urllib2.urlopen('http://' + self._ip + ':8080/s_reboot.htm', '')
+            response = urllib3.urlopen('http://' + self._ip + ':8080/s_reboot.htm', '')
             body = response.read()
 
             self._unregister()
             self._setConfigured()
             return True
-        except cjson.DecodeError, e:
+        except cjson.DecodeError as e:
             logging.error('Endpoint %s@%s received invalid JSON - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except urllib2.HTTPError, e:
+        except urllib3.HTTPError as e:
             logging.error('Endpoint %s@%s failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

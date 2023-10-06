@@ -100,7 +100,7 @@ class Endpoint(BaseEndpoint):
             if m:
                 sModel = m.group(1)
         
-        except Exception, e:
+        except Exception as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
         finally:
@@ -113,7 +113,7 @@ class Endpoint(BaseEndpoint):
         '''Probe specific model of the Cisco phone from its web page'''
         sModel = None
         try:
-            response = urllib2.urlopen('http://' + self._ip + '/')
+            response = urllib3.urlopen('http://' + self._ip + '/')
             htmlbody = response.read()
 
             # Search for the text that contains the Cisco phone model
@@ -121,7 +121,7 @@ class Endpoint(BaseEndpoint):
 
             if model_match:
                 sModel = model_match.group(1)
-        except Exception, e:
+        except Exception as e:
             logging.error('Endpoint %s@%s web connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
         
@@ -154,7 +154,7 @@ class Endpoint(BaseEndpoint):
             sConfigPath = issabel.BaseEndpoint.TFTP_DIR + '/' + sConfigFile
             BaseEndpoint._writeTemplate('Cisco_global_SIPDefault.tpl', vars, sConfigPath)
             return True
-        except IOError, e:
+        except IOError as e:
             logging.error('Failed to write global config for Cisco - %s' % (str(e),))
             return False
 
@@ -208,11 +208,11 @@ class Endpoint(BaseEndpoint):
             self._unregister()
             self._setConfigured()
             return True
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except Exception, e:
+        except Exception as e:
             logging.error('Endpoint %s@%s failed to update local configuration - %s' %
                       (self._vendorname, self._ip, str(e)))
         return False
@@ -231,11 +231,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -256,7 +256,7 @@ class Endpoint(BaseEndpoint):
             telnet.close()
             
             return True
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

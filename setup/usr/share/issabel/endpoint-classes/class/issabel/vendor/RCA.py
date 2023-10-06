@@ -28,8 +28,9 @@
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Escene
+import urllib3
 import eventlet
-from eventlet.green import socket, urllib2, urllib, os
+from eventlet.green import socket, urllib, os
 import errno
 import re
 import xml.dom.minidom
@@ -49,18 +50,18 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
         '''
         sModel = None
         try:
-            response = urllib2.urlopen('http://' + self._ip + '/console/start')
+            response = urllib3.urlopen('http://' + self._ip + '/console/start')
             htmlbody = response.read()
             if response.code == 200:
                 # RCA IP150 (Glass.GB.2.0/4085) Settings
                 m = re.search(r'RCA (\w+)', htmlbody)
                 if m != None: sModel = m.group(1)
-        except urllib2.HTTPError, e:
+        except urllib3.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="RCA (\w+)"', e.headers['WWW-Authenticate'])
                 if m != None:
                     sModel = m.group(1)
-        except Exception, e:
+        except Exception as e:
             pass
 
         if sModel != None: self._saveModel(sModel)
@@ -100,7 +101,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
         xmlcontent = self._buildXMLConfig()
         try:
             self._writeContent(sConfigPath, xmlcontent)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -135,7 +136,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
             self._addSetting(dom, xml_system, 'netMask', stdvars['static_mask'])
             self._addSetting(dom, xml_system, 'gateway', stdvars['static_gateway'])
             self._addSetting(dom, xml_system, 'dns1', stdvars['static_dns1'])
-            if stdvars['static_dns2'] <> None:
+            if stdvars['static_dns2'] != None:
                 self._addSetting(dom, xml_system, 'dns2', stdvars['static_dns2'])
         self._addSetting(dom, xml_system, 'displayName', stdvars['sip'][0].description)
         self._addSetting(dom, xml_system, 'displayNumber', stdvars['sip'][0].extension)
@@ -171,7 +172,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
     def _sendPhoneConfiguration(self, xmlcontent):
         try:
             # Login into interface
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+            opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
             response = opener.open('http://' + self._ip + '/console/j_security_check',
                 urllib.urlencode({
                     'submit' : 'Login',
@@ -196,7 +197,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
                 '\r\n' +\
                 xmlcontent + '\r\n' +\
                 '--' + boundary + '--\r\n'
-            filerequest = urllib2.Request(
+            filerequest = urllib3.Request(
                 'http://' + self._ip + '/console/configuration',
                 postdata, {'Content-Type': 'multipart/form-data; boundary=' + boundary})
             # The phone configuration restore is known to hang for 25-30 seconds 
@@ -244,19 +245,19 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
             try:
                 s = stdout.read()
                 logging.info('Endpoint %s@%s - answer follows:\n%s' % (self._vendorname, self._ip, s,))
-            except socket.error, e:
+            except socket.error as e:
                 pass
             ssh.close()
             return True
-        except paramiko.AuthenticationException, e:
+        except paramiko.AuthenticationException as e:
             logging.error('Endpoint %s@%s failed to authenticate ssh - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except urllib2.URLError, e:
+        except urllib3.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

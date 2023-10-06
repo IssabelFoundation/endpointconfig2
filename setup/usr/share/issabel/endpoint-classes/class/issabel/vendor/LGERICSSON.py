@@ -52,11 +52,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip, 6000)
             telnet.get_socket().settimeout(5)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return
@@ -70,7 +70,7 @@ class Endpoint(BaseEndpoint):
             m = re.search(r'Welcome to LG-Ericsson (\w+)', text)
             if m != None:
                 sModel = m.group(1)
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -100,7 +100,7 @@ class Endpoint(BaseEndpoint):
         vars['time_zone'] = self._timeZone
         try:
             self._writeTemplate('LG-ERICSSON_local_IP8802A.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -126,11 +126,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip, 6000)
             telnet.get_socket().settimeout(10)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -162,7 +162,7 @@ class Endpoint(BaseEndpoint):
                 telnet.write('System/Reboot\r\ny\r\n')
                 idx, m, text = telnet.expect([r'Reboot msg'], 10)
                 telnet.close()
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

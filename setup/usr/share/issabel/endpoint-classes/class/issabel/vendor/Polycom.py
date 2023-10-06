@@ -56,7 +56,7 @@ class Endpoint(BaseEndpoint):
         for sDir in ('/polycom/logs', '/polycom/overrides', '/polycom/contacts'):
             try:
                 os.makedirs(issabel.BaseEndpoint.TFTP_DIR + sDir, 0777)
-            except OSError, e:
+            except OSError as e:
                 # swallow "already exists", re-raise anything else
                 if e.errno != errno.EEXIST: 
                     logging.error('Failed to create directory for Polycom - %s' % (str(e),))
@@ -74,7 +74,7 @@ class Endpoint(BaseEndpoint):
             try:
                 sConfigPath = issabel.BaseEndpoint.TFTP_DIR + '/' + sConfigFile
                 BaseEndpoint._writeTemplate(sTemplate, vars, sConfigPath)
-            except IOError, e:
+            except IOError as e:
                 logging.error('Failed to write %s for Polycom - %s' % (sConfigFile, str(e),))
                 return False
         return True
@@ -112,7 +112,7 @@ class Endpoint(BaseEndpoint):
             vars['sip_cfg'] = 'sip_2.cfg'
         try:
             self._writeTemplate('Polycom_local_header.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -122,7 +122,7 @@ class Endpoint(BaseEndpoint):
         sConfigPath = self._tftpdir + '/' + sConfigFile
         try:
             self._writeTemplate('Polycom_local_reg.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -130,7 +130,7 @@ class Endpoint(BaseEndpoint):
         sConfigPath = self._tftpdir + '/' + sConfigFile
         try:
             self._writeTemplate('Polycom_local_microbrowser.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -144,7 +144,7 @@ class Endpoint(BaseEndpoint):
                 f = open(self._tftpdir + logpath, 'a')
                 f.close()
                 os.chmod(self._tftpdir + logpath, 0666)
-            except IOError, e:
+            except IOError as e:
                 logging.error('Endpoint %s@%s failed to create logfile - %s' %
                     (self._vendorname, self._ip, str(e)))
                 return False

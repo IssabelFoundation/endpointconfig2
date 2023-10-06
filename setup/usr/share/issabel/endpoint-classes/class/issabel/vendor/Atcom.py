@@ -60,11 +60,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return
-        except socket.error, e:
+        except socket.error as e:
             logging.warning('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             telnet = None
@@ -96,7 +96,7 @@ class Endpoint(BaseEndpoint):
                             return False
                         else:
                             sModel = m.group(1)
-            except socket.error, e:
+            except socket.error as e:
                 logging.error('Endpoint %s@%s connection failure - %s' %
                     (self._vendorname, self._ip, str(e)))
                 return False
@@ -110,7 +110,7 @@ class Endpoint(BaseEndpoint):
                 http.close()
                 m = re.search(r'Product Name : .+?>(\w+)<', htmlbody)
                 if m != None: sModel = m.group(1)
-            except socket.error, e:
+            except socket.error as e:
                 logging.error('Endpoint %s@%s connection failure - %s' %
                     (self._vendorname, self._ip, str(e)))
                 return False
@@ -153,11 +153,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -245,7 +245,7 @@ class Endpoint(BaseEndpoint):
                 else:
                     logging.error('Endpoint %s@%s fell out of sync' % (self._vendorname, self._ip))
                     return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -300,11 +300,11 @@ class Endpoint(BaseEndpoint):
             telnet = telnetlib.Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
-        except socket.timeout, e:
+        except socket.timeout as e:
             logging.error('Endpoint %s@%s failed to telnet - timeout (%s)' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to telnet - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -344,7 +344,7 @@ class Endpoint(BaseEndpoint):
                 else:
                     logging.error('Endpoint %s@%s fell out of sync' % (self._vendorname, self._ip))
                     return False
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -490,7 +490,7 @@ class Endpoint(BaseEndpoint):
                 return None
 
             return htmlres
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return None
@@ -549,7 +549,7 @@ class Endpoint(BaseEndpoint):
                 status = False
             http.close()
             return status
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False

@@ -28,8 +28,9 @@
 import logging
 import re
 import issabel.BaseEndpoint
+import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import httplib, urllib, urllib2, socket
+from eventlet.green import httplib, urllib, socket
 import base64
 
 class Endpoint(BaseEndpoint):
@@ -61,8 +62,8 @@ class Endpoint(BaseEndpoint):
         sModel = None
         try:
             # Do not expect this to succeed. Only interested in exception.
-            urllib2.urlopen('http://' + self._ip + '/')
-        except urllib2.HTTPError, e:
+            urllib3.urlopen('http://' + self._ip + '/')
+        except urllib3.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Aastra (.+)"', e.headers['WWW-Authenticate'])
                 if m != None:
@@ -70,11 +71,11 @@ class Endpoint(BaseEndpoint):
                 else:
                     self._http_username = 'admin'
                     self._http_password = '22222'
-                    password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                    password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
                     password_manager.add_password(None, 'http://' + self._ip + '/',
                         self._http_username, self._http_password)
-                    basic_auth_handler = urllib2.HTTPBasicAuthHandler(password_manager)
-                    opener = urllib2.build_opener(basic_auth_handler)
+                    basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
+                    opener = urllib3.build_opener(basic_auth_handler)
                     try:
                         response = opener.open('http://' + self._ip + '/sysinfo.html')
                         htmlbody = response.read()
@@ -85,9 +86,9 @@ class Endpoint(BaseEndpoint):
                         m = re.search(r'Platform</TD>.*?<TD.*?>(\w+)', htmlbody, re.IGNORECASE | re.DOTALL)
                         if m != None:
                             sModel = m.group(1)
-                    except Exception, e:
+                    except Exception as e:
                         pass
-        except Exception, e:
+        except Exception as e:
             pass
         
         if sModel != None: self._saveModel(sModel)
@@ -107,7 +108,7 @@ class Endpoint(BaseEndpoint):
             sConfigPath = issabel.BaseEndpoint.TFTP_DIR + '/' + sConfigFile
             BaseEndpoint._writeTemplate('Aastra_global_cfg.tpl', vars, sConfigPath)
             return True
-        except IOError, e:
+        except IOError as e:
             logging.error('Failed to write global config for Aastra - %s' % (str(e),))
             return False
         
@@ -132,7 +133,7 @@ class Endpoint(BaseEndpoint):
         vars = self._prepareVarList()
         try:
             self._writeTemplate('Aastra_local_cfg.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -157,7 +158,7 @@ class Endpoint(BaseEndpoint):
         # Additionally, the TCP/IP and HTTP stack of the Aastra 6739i is buggy.
         # When performing a POST, the firmware wants the end of the headers and
         # the start of the body in the same TCP/IP packet. If they are on 
-        # different packets, the request hangs. Due to the way urllib2 works, 
+        # different packets, the request hangs. Due to the way urllib3 works, 
         # it introduces a flush between the two, which triggers said hang. 
         # Therefore, the full POST request must be assembled and sent manually
         # as a single write.
@@ -211,7 +212,7 @@ class Endpoint(BaseEndpoint):
             resp.begin()
             htmlbody = resp.read()
             
-            if resp.status <> 200:
+            if resp.status != 200:
                 logging.error('Endpoint %s@%s failed to post configuration - %s' %
                     (self._vendorname, self._ip, r))
                 return False
@@ -219,7 +220,7 @@ class Endpoint(BaseEndpoint):
                 logging.error('Endpoint %s@%s failed to set configuration server - not provisioned' %
                     (self._vendorname, self._ip))
                 return False            
-        except socket.error, e:
+        except socket.error as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

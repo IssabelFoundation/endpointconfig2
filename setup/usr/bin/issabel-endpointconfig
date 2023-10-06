@@ -255,10 +255,10 @@ def main():
             # Execute the deleteContent method on all of the endpoints
             for ip in endpointList:
                 endpointList[ip]['endpoint'].deleteContent()
-    except issabel.ConfigException, e:
+    except issabel.ConfigException as e:
         logging.error(e.msg)
         exitstatus = 1
-    except Exception, e:
+    except Exception as e:
         logging.error('Uncaught exception: \n%s' % (traceback.format_exc(),))
         exitstatus = 1
     if options.applyconfig:
@@ -288,13 +288,13 @@ def spawnEndpoint(endpointInfo):
             logging.warning('(%d/%d) failed configuration for endpoint %s@%s (%s)...' %
                 (iCurrentStep, iTotalSteps, endpointInfo['manufacturer'], 
                  endpointInfo['ip'], endpointInfo['id']))
-    except issabel.ConfigException, e:
+    except issabel.ConfigException as e:
         logging.error(e.msg)
         logging.warning('(%d/%d) failed configuration for endpoint %s@%s (%s)...' %
             (iCurrentStep, iTotalSteps, endpointInfo['manufacturer'], 
              endpointInfo['ip'], endpointInfo['id']))
         r = False
-    except Exception, e:
+    except Exception as e:
         logging.error('Uncaught exception: \n%s' % (traceback.format_exc(),))
         logging.warning('(%d/%d) failed configuration for endpoint %s@%s (%s)...' %
             (iCurrentStep, iTotalSteps, endpointInfo['manufacturer'], 

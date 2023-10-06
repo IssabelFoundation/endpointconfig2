@@ -28,8 +28,9 @@
 import logging
 import re
 import issabel.BaseEndpoint
+import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import urllib2, httplib, urllib
+from eventlet.green import httplib, urllib
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -65,12 +66,12 @@ class Endpoint(BaseEndpoint):
         sModel = None
         try:
             # Do not expect this to succeed. Only interested in exception.
-            urllib2.urlopen('http://' + self._ip + '/')
-        except urllib2.HTTPError, e:
+            urllib3.urlopen('http://' + self._ip + '/')
+        except urllib3.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Atlinks (.+)"', e.headers['WWW-Authenticate'])
                 if m != None: sModel = m.group(1)
-        except Exception, e:
+        except Exception as e:
             pass
         
         if sModel != None: self._saveModel(sModel)
@@ -101,7 +102,7 @@ class Endpoint(BaseEndpoint):
         })
         try:
             self._writeTemplate('Atlinks_local_cfg.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -132,7 +133,7 @@ class Endpoint(BaseEndpoint):
         try:
             if not self._doAuthPost('/cgi-bin/ConfigManApp.com', postvars):
                 return False
-        except httplib.BadStatusLine, e:
+        except httplib.BadStatusLine as e:
             # Apparently a successful POST will start provisioning immediately
             logging.error('Endpoint %s@%s failed to set provisioning server - %s' %
                 (self._vendorname, self._ip, str(e)))

@@ -27,9 +27,9 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
+import urllib3
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import urllib2
 import errno
 
 class Endpoint(BaseEndpoint):
@@ -52,12 +52,12 @@ class Endpoint(BaseEndpoint):
         '''
         sModel = None
         try:
-            response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/prefetch.cgi')
+            response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/prefetch.cgi')
             htmlbody = response.read()
             if response.code == 200:
                 m = re.search(r'setting id="phone_model" value="(\w+)"', htmlbody)
                 if m != None: sModel = m.group(1)
-        except Exception, e:
+        except Exception as e:
             pass
         
         if sModel != None: self._saveModel(sModel)
@@ -322,7 +322,7 @@ class Endpoint(BaseEndpoint):
                 })
                 commentspan = None
                 
-        except IOError, e:
+        except IOError as e:
             if e.errno != errno.ENOENT:
                 logging.error('Failed to read current res_digium_phone.conf - %s' % str(e))
                 return [None, None]
@@ -336,7 +336,7 @@ class Endpoint(BaseEndpoint):
                 f.write(currentsection['rawtext'])
             f.close()
             return True
-        except IOError, e:
+        except IOError as e:
             logging.error('Failed to write new res_digium_phone.conf - %s' % str(e))
             return False
     
@@ -408,7 +408,7 @@ class Endpoint(BaseEndpoint):
                 ami = amipool.get()
                 ami.command('module reload chan_sip.so');
                 amipool.put(ami)
-        except IOError, e:
+        except IOError as e:
             if e.errno != errno.ENOENT:
                 logging.warning('Failed to check SIP configuration - %s' % str(e))
             return

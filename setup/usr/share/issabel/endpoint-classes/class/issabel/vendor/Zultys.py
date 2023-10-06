@@ -61,13 +61,13 @@ class Endpoint(BaseEndpoint):
             sConfigPath = issabel.BaseEndpoint.TFTP_DIR + '/' + sConfigFile
             try:
                 BaseEndpoint._writeTemplate('Zultys_global_cfg.tpl', vars, sConfigPath)
-            except IOError, e:
+            except IOError as e:
                 logging.error('Failed to write %s for Zultys - %s' % (sConfigFile, str(e),))
                 return False
             
             try:
                 os.makedirs(issabel.BaseEndpoint.TFTP_DIR + '/' + sModel, 0777)
-            except OSError, e:
+            except OSError as e:
                 # swallow "already exists", re-raise anything else
                 if e.errno != errno.EEXIST: 
                     logging.error('Failed to create directory for Zultys - %s' % (str(e),))
@@ -97,7 +97,7 @@ class Endpoint(BaseEndpoint):
         sConfigPath = self._tftpdir + '/' + self._model + '/' + sConfigFile
         try:
             self._writeTemplate('Zultys_local_cfg.tpl', vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

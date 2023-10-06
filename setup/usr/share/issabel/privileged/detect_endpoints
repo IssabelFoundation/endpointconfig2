@@ -72,7 +72,7 @@ def main():
 	if os.path.exists(SOCKET_PATH):
 		try:
 			os.remove(SOCKET_PATH);
-		except OSError, e:
+		except OSError as e:
 			sys.stderr.write('ERR: failed to remove old socket: ' + str(e) +'\n')
 			sys.exit(1)
 	
@@ -137,7 +137,7 @@ def main():
 	if os.path.exists(SOCKET_PATH):
 		try:
 			os.remove(SOCKET_PATH);
-		except OSError, e:
+		except OSError as e:
 			sys.stderr.write('ERR: failed to remove socket: ' + str(e) +'\n')
 
 def get_database_credentials():
@@ -163,7 +163,7 @@ def get_database_credentials():
 			return dbcred
 		else:
 			return None
-	except IOError, e:
+	except IOError as e:
 		sys.stderr.write('ERR: failed to read /etc/amportal.conf: ' + str(e) + '\n')
 		return None
 
@@ -182,7 +182,7 @@ def list_patton(dbpool):
 			pattonid = row[0]
 		sth.close()
 		dbpool.put(dbconn)
-	except MySQLdb.Error, e:
+	except MySQLdb.Error as e:
 		sys.stderr.write('ERR: failed to load Patton ID: ' + str(e) + '\n')
 		if dbconn != None: dbpool.put(dbconn)
 		return
@@ -204,7 +204,7 @@ def list_patton(dbpool):
 	# Open raw ICMP socket, requires root privileges
 	try:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname('icmp'))
-	except socket.error, e:
+	except socket.error as e:
 		sys.stderr.write('ERR: unable to create ICMP socket:' + str(e) + '\n')
 		return
 	sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -250,9 +250,9 @@ def list_patton(dbpool):
 							try:
 								routeranswered = True
 								process_endpoint(dbpool, routeraddr[0], None, pattonid)
-							except MySQLdb.Error, e:
+							except MySQLdb.Error as e:
 								break
-	except socket.error, e:
+	except socket.error as e:
 		sys.stderr.write('ERR: unable to send/receive through ICMP socket:' + str(e) + '\n')		
 	sock.close()
 
@@ -274,7 +274,7 @@ def list_mac_ips(dbpool, netmask):
 			macprefix[row[0]] = row[1]
 		sth.close()
 		dbpool.put(dbconn)
-	except MySQLdb.Error, e:
+	except MySQLdb.Error as e:
 		sys.stderr.write('ERR: failed to load MAC prefixes: ' + str(e) + '\n')
 		if dbconn != None: dbpool.put(dbconn)
 		return
@@ -302,13 +302,13 @@ def list_mac_ips(dbpool, netmask):
 					if mac[:8] in macprefix:
 						try:
 							process_endpoint(dbpool, ip, mac, macprefix[mac[:8]])
-						except MySQLdb.Error, e:
+						except MySQLdb.Error as e:
 							os.kill(r.pid, signal.SIGTERM)
 							r.wait()
 			# Check for program end
 			if cancelprobe and running:
 				os.kill(r.pid, signal.SIGTERM)
-	except OSError, e:
+	except OSError as e:
 		sys.stderr.write('ERR: failed to spawn nmap: ' + str(e) + '\n')
 
 def process_endpoint(dbpool, ip, mac, manufacturerid):
@@ -333,7 +333,7 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 			try:
 				vendormodule = __import__(pkg, {}, {}, pkg.split('.')[:-1])
 				endpointClasses[manufacturerid] = vendormodule.Endpoint
-			except ImportError, e:
+			except ImportError as e:
 				endpointClasses[manufacturerid] = None
 		
 		# Remove any entry with IP collision and a different MAC
@@ -407,7 +407,7 @@ def process_endpoint(dbpool, ip, mac, manufacturerid):
 			endpoint = eclass(None, dbpool, None, ip, mac)
 			gpool.spawn_n(probe_model, endpoint, id_endpoint)
 		
-	except MySQLdb.Error, e:
+	except MySQLdb.Error as e:
 		if dbconn != None: dbpool.put(dbconn)
 		raise(e)
 
@@ -420,7 +420,7 @@ def broadcast_change(tuple):
 		try:
 			fd.write('%s %d\n' % (tuple[0], tuple[1]))
 			fd.flush()
-		except socket.error, e:
+		except socket.error as e:
 			pass
 
 def probe_model(endpoint, id_endpoint):
@@ -454,7 +454,7 @@ def process_client(fd):
 		if not closedHere:
 			fd.write('quit\n')
 			fd.close()
-	except socket.error, e:
+	except socket.error as e:
 		sys.stderr.write('WARN: got error while processing client: %s\n' % str(e));
 	clients.remove(fd)
 

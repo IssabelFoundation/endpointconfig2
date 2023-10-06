@@ -27,8 +27,9 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
+import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import socket, urllib2, httplib, urllib
+from eventlet.green import socket, httplib, urllib
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -69,13 +70,13 @@ class Endpoint(BaseEndpoint):
         realm = None
         try:
             # Attempt to tickle a 401 Unauthorized from the server.
-            response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/')
+            response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/')
             htmlbody = response.read()
             urlmatch = re.findall(r'<a href="(.+?)">', htmlbody, re.IGNORECASE)
             for url in urlmatch:
-                response = urllib2.urlopen('http://' + self._ip + '/cgi-bin/' + url)
+                response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/' + url)
                 htmlbody = response.read()
-        except urllib2.HTTPError, e:
+        except urllib3.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="(.+)"', e.headers['WWW-Authenticate'])
                 if m != None: realm = m.group(1)
@@ -92,7 +93,7 @@ class Endpoint(BaseEndpoint):
             else:
                 logging.warning('Endpoint %s@%s failed to identify model from WWW-Authenticate: %s' %
                         (self._vendorname, self._ip, str(e)))
-        except Exception, e:
+        except Exception as e:
             #print str(e)
             pass
         
@@ -110,39 +111,39 @@ class Endpoint(BaseEndpoint):
                     ),
                 )
                 for sourceList in configSources:
-                    basic_auth_handler = urllib2.HTTPBasicAuthHandler()
+                    basic_auth_handler = urllib3.HTTPBasicAuthHandler()
                     basic_auth_handler.add_password(
                         realm=realm,
                         uri='http://' + self._ip + '/',
                         user='admin',
                         passwd='admin')
-                    opener = urllib2.build_opener(basic_auth_handler)
+                    opener = urllib3.build_opener(basic_auth_handler)
                     try:
                         for sourceUrl in sourceList:
                             response = opener.open('http://' + self._ip + sourceUrl)
                             htmlbody = response.read()
                             m = re.search(r'UserAgent\s*=\s*(Yealink)?\s*(\S+)', htmlbody)
                             if (m != None): sModel = m.group(2)
-                    except urllib2.HTTPError, e:
+                    except urllib3.HTTPError as e:
                         if e.code != 404:
                             logging.warning('Endpoint %s@%s failed to identify model from WWW-Authenticate: %s' %
                                     (self._vendorname, self._ip, str(e)))
                             break
-                    except Exception, e:
+                    except Exception as e:
                         #print str(e)
                         break
                     if sModel != None: break
             else:
                 # Failed to tickle 401 unauthorized. Newer firmware with form login
                 try:
-                    response = urllib2.urlopen('http://' + self._ip + '/servlet?p=login&q=loginForm&jumpto=status')
+                    response = urllib3.urlopen('http://' + self._ip + '/servlet?p=login&q=loginForm&jumpto=status')
                     htmlbody = response.read()
                     m = re.search(r'T\("Enterprise IP phone (\S+)"\)', htmlbody, re.IGNORECASE)
                     if (m != None): sModel = m.group(1)
-                except urllib2.HTTPError, e:
+                except urllib3.HTTPError as e:
                     logging.warning('Endpoint %s@%s failed to identify model from form login: %s' %
                             (self._vendorname, self._ip, str(e)))
-                except Exception, e:
+                except Exception as e:
                     #print str(e)
                     pass
         
@@ -194,7 +195,7 @@ class Endpoint(BaseEndpoint):
         })
         try:
             self._writeTemplate(sTemplate, vars, sConfigPath)
-        except IOError, e:
+        except IOError as e:
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -228,7 +229,7 @@ class Endpoint(BaseEndpoint):
         try:
             if not self._doAuthPost('/cgi-bin/ConfigManApp.com', postvars):
                 return False
-        except httplib.BadStatusLine, e:
+        except httplib.BadStatusLine as e:
             # Apparently a successful POST will start provisioning immediately
             logging.error('Endpoint %s@%s failed to set provisioning server - %s' %
                 (self._vendorname, self._ip, str(e)))
