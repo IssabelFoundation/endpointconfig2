@@ -122,13 +122,9 @@ def main():
 	
 	while gpool.running() > 0:
 		try:
-			lists = select.select([server], [], [], 0.1)
-			if lists == None: continue
-			rd,wr,er = lists
+			rd, _, _ = select.select([server], [], [], 0.1)
 			if len(rd) > 0:
-				new_sock, address = server.accept()
-				fd = new_sock.makefile('rw')
-				new_sock.close()
+				fd, address = server.accept()
 				clients.add(fd)
 				gpool.spawn_n(process_client, fd)
 		except (SystemExit, KeyboardInterrupt):
@@ -437,25 +433,24 @@ def process_client(fd):
 	
 	index = 1
 	for tuple in endpointChangeLog:
-		fd.write('%s %d\n' % (tuple[0], tuple[1]))
+		fd.sendall(b'%s %d\n' % (tuple[0], tuple[1]))
 		index += 1
-	fd.flush()
 	
 	# Check for running > 1 because this method is running in the gpool
 	try:
 		closedHere = False
 		while not cancelprobe and gpool.running() > 1:
-			rd,wr,er = select.select([fd], [], [], 0.1)
+			rd,_,_ = select.select([fd], [], [], 0.1)
 			if len(rd) > 0:
 				s = fd.readline()
 				if s[:4] == 'quit':
 					cancelprobe = True
-				fd.write('quit\n')
+				fd.sendall(b'quit\n')
 				fd.close()
 				closedHere = True
 				break
 		if not closedHere:
-			fd.write('quit\n')
+			fd.sendall(b'quit\n')
 			fd.close()
 	except socket.error as e:
 		sys.stderr.write('WARN: got error while processing client: %s\n' % str(e));

@@ -4,6 +4,8 @@
  %define dist .el7
 %endif
 
+#%undefine __brp_mangle_shebangs
+
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 5.0.0
