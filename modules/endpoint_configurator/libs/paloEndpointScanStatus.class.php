@@ -21,7 +21,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: paloEndpointScanStatus.class.php, Thu 20 May 2021 08:29:23 AM EDT, nicolas@issabel.com
+  $Id: paloEndpointScanStatus.class.php, Sun 08 Oct 2023 06:01:26 PM EDT, nicolas@issabel.com
 */
 
 /*
@@ -56,20 +56,20 @@ class paloEndpointScanStatus extends paloInterfaceSSE
     }
     
     function createEmptyResponse() { return array('endpointchanges' => array()); }
-    function isEmptyResponse($jsonResponse) { return (count($jsonResponse['endpointchanges']) <= 0); }
+    function isEmptyResponse($jsonResponse) { return (count($jsonResponse['endpointchanges']) <= 0); }	    
     
     function findInitialStateDifferences(&$currentClientState, &$jsonResponse)
     {
         // Se asume que la verificación inicial tiene un archivo de socket
         $errno = $errstr = NULL;
         $this->_scanSockPath = $currentClientState['scanSocket'];
-        $this->_scanSock = @fsockopen('unix://'.$this->_scanSockPath, -1, $errno, $errstr);
-        
+	    $this->_scanSock = stream_socket_client('unix://'.$this->_scanSockPath, $errno, $errstr, -1, STREAM_CLIENT_CONNECT);
+
         if (FALSE === $this->_scanSock) {
             /* La causa más probable de fallo en abrir es que el escaneo ya
              * terminó. Se verifica contra la base de datos por si hay 
              * diferencias, las cuales se anotan en $jsonResponse. */
-        	$this->_scanSock = NULL;
+            $this->_scanSock = NULL;
             $currentClientState['scanSocket'] = $this->_scanSockPath = NULL;
             $this->_buscarCambioGlobalEndpoints($currentClientState['endpoints'], $jsonResponse['endpointchanges']);
             $currentClientState['endpoints'] = NULL;
@@ -78,10 +78,10 @@ class paloEndpointScanStatus extends paloInterfaceSSE
         } else {
             stream_set_blocking($this->_scanSock, 0);
             
-            while ($s = fgets($this->_scanSock)) {
+            while (($s = fgets($this->_scanSock)) !== false) {
             	/* La línea leída puede ser 'quit' si el escaneo termina, o una
                  * tupla (insert|update|delete id_endpoint) */
-                $s = trim($s);
+		$s = trim($s);
                 if ($s == 'quit') {
                     fclose($this->_scanSock);
                     $this->_scanSock = NULL;
@@ -136,8 +136,8 @@ class paloEndpointScanStatus extends paloInterfaceSSE
         if (is_null($this->_scanSock)) {
             $currentClientState['scanSocket'] = $this->_scanSockPath = NULL;
             $this->_buscarCambioGlobalEndpoints($currentClientState['endpoints'], $jsonResponse['endpointchanges']);
-            $currentClientState['endpoints'] = NULL;
-            $jsonResponse['endpointchanges'][] = array('quit', NULL);
+	    $currentClientState['endpoints'] = NULL;
+	    $jsonResponse['endpointchanges'][] = array('quit', NULL);
         	return FALSE;
         } else return TRUE;
     }
