@@ -114,7 +114,7 @@ For each endpoint to configure, the following needs to take place.
 '''
 import sys, traceback, logging, re
 from optparse import OptionParser
-from ConfigParser import RawConfigParser
+import configparser
 import eventlet
 from eventlet import pools
 from eventlet.greenpool import GreenPool
@@ -328,7 +328,7 @@ def getDatabaseCredentials():
 
 def getAsteriskCredentials():
     '''Get Asterisk credentials to connect to AMI '''
-    config = RawConfigParser()
+    config = configparser.RawConfigParser()
     config.read(['/etc/asterisk/manager.conf'])
     asteriskaddr = ['127.0.0.1', 5038]
     asteriskcred = [None, None]
