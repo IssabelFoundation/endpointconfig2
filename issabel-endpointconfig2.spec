@@ -18,13 +18,13 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildArch: noarch
 Requires: issabel-framework >= 5.0.0-1
 Requires: issabel-agenda >= 4.0.0-1
-Requires: pyst2-Asterisk
 Requires: python-cjson
 Requires: php-simplepie
 Requires: nmap
 Requires: tftp-server
 
 %if 0%{?rhel} == 7
+Requires: pyst2-Asterisk
 Requires: MySQL-python
 Requires: python-paramiko >= 1.7.6-2
 Requires: python-tempita
@@ -32,6 +32,7 @@ Requires: python-eventlet
 Requires: python-daemon
 Requires: pyOpenSSL
 %else
+Requires: py-Asterisk
 Requires: python3-mysqlclient
 Requires: python3-paramiko
 Requires: python3-tempita
