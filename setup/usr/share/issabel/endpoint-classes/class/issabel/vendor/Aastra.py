@@ -30,7 +30,7 @@ import re
 import issabel.BaseEndpoint
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import httplib, urllib, socket
+from eventlet.green import http.client, urllib, socket
 import base64
 
 class Endpoint(BaseEndpoint):
@@ -208,7 +208,7 @@ class Endpoint(BaseEndpoint):
             # Rather than parse the response myself, I create an instance of
             # HTTPResponse. However, begin() is an internal method, and not
             # guaranteed to exist in future versions of the library.
-            resp = httplib.HTTPResponse(sock, strict=1, method='POST')
+            resp = http.client.HTTPResponse(sock, strict=1, method='POST')
             resp.begin()
             htmlbody = resp.read()
             

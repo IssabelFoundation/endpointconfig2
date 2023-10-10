@@ -31,7 +31,7 @@ import re
 import requests
 from issabel.BaseEndpoint import BaseEndpoint
 import eventlet
-from eventlet.green import socket, httplib, urllib
+from eventlet.green import socket, http.client, urllib
 telnetlib = eventlet.import_patched('telnetlib')
 
 class Endpoint(BaseEndpoint):
@@ -103,7 +103,7 @@ class Endpoint(BaseEndpoint):
         else:
             # If telnet failed, this might be an AT800 phone
             try:
-                http = httplib.HTTPConnection(self._ip)
+                http = http.client.HTTPConnection(self._ip)
                 http.request('GET', '/index.asp')
                 resp = http.getresponse()
                 htmlbody = resp.read()
@@ -381,7 +381,7 @@ class Endpoint(BaseEndpoint):
         return m.group(2)
 
     def _setupAtcomAuthentication(self):
-        http = httplib.HTTPConnection(self._ip)
+        http = http.client.HTTPConnection(self._ip)
 
         noncesources = ('/', '/', '/right.htm')
         for noncesource in noncesources:
@@ -534,7 +534,7 @@ class Endpoint(BaseEndpoint):
                 '\r\n' +\
                 xmlcontent + '\r\n' +\
                 '--' + boundary + '--\r\n'
-            http = httplib.HTTPConnection(self._ip)
+            http = http.client.HTTPConnection(self._ip)
             http.request('POST', '/goform/submit_upload_configfile', postdata,
                 { 'Content-Type' : ' multipart/form-data; boundary=' + boundary })
             resp = http.getresponse()

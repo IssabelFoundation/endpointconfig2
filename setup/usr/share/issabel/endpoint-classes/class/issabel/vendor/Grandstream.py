@@ -32,12 +32,12 @@ import eventlet
 import urllib3
 from eventlet.green import socket, urllib, os
 import errno
-import cjson
+import json
 from issabel.BaseEndpoint import BaseEndpoint
 telnetlib = eventlet.import_patched('telnetlib')
-import cookielib
+import http.cookiejar
 import time
-import httplib
+import http.client
 paramiko = eventlet.import_patched('paramiko')
 
 class Endpoint(BaseEndpoint):
@@ -232,7 +232,7 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXP140x(self, vars):
         try:
             # Login into interface and get SID. Check proper Content-Type
-            cookiejar = cookielib.CookieJar(cookielib.DefaultCookiePolicy(rfc2965=True))
+            cookiejar = http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(rfc2965=True))
             opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
             # response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/dologin',
             response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
@@ -245,7 +245,7 @@ class Endpoint(BaseEndpoint):
                 return False
             
             # Check successful login and get sid
-            jsonvars = cjson.decode(body)
+            jsonvars = json.decode(body)
             if not ('body' in jsonvars and 'sid' in jsonvars['body']):
                 logging.error('Endpoint %s@%s GXP140x - dologin failed login' %
                     (self._vendorname, self._ip))
@@ -271,7 +271,7 @@ class Endpoint(BaseEndpoint):
                 return False
             
             return True
-        except cjson.DecodeError as e:
+        except json.DecodeError as e:
             logging.error('Endpoint %s@%s GXP140x received invalid JSON - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -293,7 +293,7 @@ class Endpoint(BaseEndpoint):
                 logging.error('Endpoint %s@%s GXP140x - api.values.post answered not application/json but %s' %
                     (self._vendorname, self._ip, response.info()['Content-Type']))
                 return None
-            jsonvars = cjson.decode(body)
+            jsonvars = json.decode(body)
         else:
             # The GXP1400 has been discovered to violate the HTTP protocol.
             # The response for /cgi-bin/api.values.post sticks a shebang
@@ -313,7 +313,7 @@ class Endpoint(BaseEndpoint):
                         expectbody = True
                 else:
                     # This expects the body to be a single JSON string in one line
-                    jsonvars = cjson.decode(s)
+                    jsonvars = json.decode(s)
                     break
         return jsonvars
 
@@ -414,7 +414,7 @@ class Endpoint(BaseEndpoint):
             #        (self._vendorname, self._ip))
                     
             return True
-        except httplib.HTTPException as e:
+        except http.client.HTTPException as e:
             logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return True

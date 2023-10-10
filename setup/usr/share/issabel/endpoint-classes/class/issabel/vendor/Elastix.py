@@ -30,7 +30,7 @@ from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Grandstream
 import urllib3
 from eventlet.green import socket, urllib
-import cookielib
+import http.cookiejar
 import re
 import time
 import os
@@ -230,8 +230,8 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         phone model. Additionally, the response after a successful login includes
         a brand new SessionId that must be replaced in the opener cookie.
         '''
-        cookiejar = cookielib.CookieJar(cookielib.DefaultCookiePolicy(rfc2965=True))
-        sesscookie = cookielib.Cookie(None, 'SessionId', '0', None, False,
+        cookiejar = http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(rfc2965=True))
+        sesscookie = http.cookiejar.Cookie(None, 'SessionId', '0', None, False,
             self._ip, False, False,
             '/', False, False, str((int)(time.time() + 3600)),
             False, 'SessionId', None, None)        
@@ -247,11 +247,11 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             return (None, None)
         encrypted_password = m.group(1)
         
-        sesscookie = cookielib.Cookie(None, 'UserName', http_user, None, False,
+        sesscookie = http.cookiejar.Cookie(None, 'UserName', http_user, None, False,
             self._ip, False, False, '/', False, False, str((int)(time.time() + 3600)),
             False, 'UserName', None, None)
         cookiejar.set_cookie(sesscookie)
-        sesscookie = cookielib.Cookie(None, 'Password', encrypted_password, None, False,
+        sesscookie = http.cookiejar.Cookie(None, 'Password', encrypted_password, None, False,
             self._ip, False, False, '/', False, False, str((int)(time.time() + 3600)),
             False, 'Password', None, None)
         cookiejar.set_cookie(sesscookie)
@@ -262,7 +262,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         body = response.read()
         m = re.search(r"id=hcSessionIdNow type=hidden value='(.+?)'", body)
         if m != None:
-            sesscookie = cookielib.Cookie(None, 'SessionId', m.group(1), None, False,
+            sesscookie = http.cookiejar.Cookie(None, 'SessionId', m.group(1), None, False,
                 self._ip, False, False,
                 '/', False, False, str((int)(time.time() + 3600)),
                 False, 'SessionId', None, None)        

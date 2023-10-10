@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # vim: set fileencoding=utf-8 :
 # vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
 # Codificación: UTF-8
@@ -123,8 +123,8 @@ from eventlet.green import socket
 import eventlet.hubs
 import MySQLdb
 daemon = eventlet.import_patched('daemon')
-commands = eventlet.import_patched('commands')
-AsteriskManager = eventlet.import_patched('asterisk.manager')
+import subprocess
+AsteriskManager = eventlet.import_patched('Asterisk.Manager')
 
 sys.path.append('/usr/share/issabel/endpoint-classes/class')
 import issabel
@@ -414,10 +414,11 @@ def loadEndpointIP(dbpool):
 def listIpAddresses():
 	'''List IPv4/Netmask for all Ethernet interfaces'''
 	iflist = {}
-	output = commands.getoutput('/sbin/ip addr show')
+	output = subprocess.check_output(['/sbin/ip','addr','show'])
+	output_str = output.decode('utf-8')
 	bIsEther = False
 	ip = None
-	for s in output.split('\n'):
+	for s in output_str.split('\n'):
 		regs = re.search(r'^\d+:\s+(\w+):\s*<(.*)>', s)
 		if regs != None:
 			bIsEther = False
@@ -454,8 +455,7 @@ def queryRegisteredAccounts(amipool, endpointList):
     known IP for each endpoint '''
     ami = amipool.get()
 
-    r = ami.command('sip show peers')
-    l = r.data.split('\n');
+    l = ami.Command('sip show peers')
     for s in l:
         logging.debug(s)
         s = s.replace('Output: ','')
@@ -470,8 +470,7 @@ def queryRegisteredAccounts(amipool, endpointList):
                     if endpoint.tech == 'sip' and endpoint.account == extArray[0]:
                         endpoint.registered = True
 
-    r = ami.command('iax2 show peers')
-    l = r.data.split('\n');
+    l = ami.Command('iax2 show peers')
     for s in l:
         logging.debug(s)
         s = s.replace('Output: ','')
@@ -485,8 +484,7 @@ def queryRegisteredAccounts(amipool, endpointList):
                     if endpoint.tech == 'iax2' and endpoint.account == j[0]:
                         endpoint.registered = True
 
-    r = ami.command('pjsip show endpoints')
-    l = r.data.split('\n');
+    l = ami.Command('pjsip show endpoints')
     for s in l:
         logging.debug(s)
         s = s.replace('Output: ','')
@@ -514,7 +512,7 @@ class AsteriskManagerPool(pools.Pool):
     def create(self):
         if self.host == None:
             # Load Asterisk credentials
-            config = RawConfigParser()
+            config = configparser.RawConfigParser()
             config.read(['/etc/asterisk/manager.conf'])
             asteriskcred = [None, None]
             asteriskhost = '127.0.0.1'
@@ -528,9 +526,7 @@ class AsteriskManagerPool(pools.Pool):
                     break
             self.user, self.passwd = asteriskcred
 
-        manager = AsteriskManager.Manager()
-        manager.connect(asteriskhost,asteriskport)
-        manager.login(self.user,self.passwd)
+        manager = AsteriskManager.Manager((asteriskhost,asteriskport),self.user,self.passwd)
         return manager
 
 if __name__ == '__main__':

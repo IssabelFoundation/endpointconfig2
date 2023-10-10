@@ -28,7 +28,7 @@
 import logging
 import re
 import urllib3
-from eventlet.green import socket, urllib, os, httplib
+from eventlet.green import socket, urllib, os, http.client
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
 
@@ -397,7 +397,7 @@ class Endpoint(BaseEndpoint):
         except socket.error as e:
             logging.error('Endpoint %s@%s failed to reboot phone - %s' %
                 (self._vendorname, self._ip, str(e)))
-        except httplib.BadStatusLine as e:
+        except http.client.BadStatusLine as e:
             # Apparently a successful CONFIRM_REBOOT will start provisioning immediately
             return (True, True)
         return (False, False)
@@ -415,7 +415,7 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
-        except httplib.BadStatusLine as e:
+        except http.client.BadStatusLine as e:
             # Apparently a successful GET will start provisioning immediately
             return True
         except socket.error as e:
@@ -439,7 +439,7 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
-        except httplib.BadStatusLine as e:
+        except http.client.BadStatusLine as e:
             # Apparently a successful GET will start provisioning immediately
             return True
         except socket.error as e:

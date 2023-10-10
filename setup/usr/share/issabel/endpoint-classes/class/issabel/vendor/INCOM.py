@@ -30,7 +30,7 @@ import re
 import urllib3
 import eventlet
 from eventlet.green import socket, urllib
-import cjson
+import json
 from issabel.BaseEndpoint import BaseEndpoint
 
 class Endpoint(BaseEndpoint):
@@ -114,7 +114,7 @@ class Endpoint(BaseEndpoint):
             # The body is JSON but Content-Type is set to text/plain
             response = urllib3.urlopen('http://' + self._ip + ':8080/xpdb.uds?mode=list&db=config')
             body = response.read()
-            jsonvars = cjson.decode(body)
+            jsonvars = json.decode(body)
 
             # Use the JSON map to find out values for sid and eid
             varmap = {
@@ -213,7 +213,7 @@ class Endpoint(BaseEndpoint):
             self._unregister()
             self._setConfigured()
             return True
-        except cjson.DecodeError as e:
+        except json.DecodeError as e:
             logging.error('Endpoint %s@%s received invalid JSON - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

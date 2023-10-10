@@ -30,7 +30,7 @@ import re
 import issabel.BaseEndpoint
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import httplib, urllib
+from eventlet.green import http.client, urllib
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -133,7 +133,7 @@ class Endpoint(BaseEndpoint):
         try:
             if not self._doAuthPost('/cgi-bin/ConfigManApp.com', postvars):
                 return False
-        except httplib.BadStatusLine as e:
+        except http.client.BadStatusLine as e:
             # Apparently a successful POST will start provisioning immediately
             logging.error('Endpoint %s@%s failed to set provisioning server - %s' %
                 (self._vendorname, self._ip, str(e)))

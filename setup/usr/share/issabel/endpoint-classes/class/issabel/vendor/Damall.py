@@ -30,7 +30,7 @@ import re
 import issabel.BaseEndpoint
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-#from eventlet.green import httplib
+#from eventlet.green import http.client
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -115,7 +115,7 @@ class Endpoint(BaseEndpoint):
         #try:
         if not self._doAuthPost('/goform/set_import_config', postvars):
             return False
-        #except httplib.BadStatusLine as e:
+        #except http.client.BadStatusLine as e:
         #    # Apparently a successful POST will start provisioning immediately
         #    pass
         
