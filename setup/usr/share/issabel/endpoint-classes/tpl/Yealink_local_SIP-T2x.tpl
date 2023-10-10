@@ -1,3 +1,4 @@
+#!version:1.0.0.1
 [ autop_mode ]
 path = /yealink/config/Setting/autop.cfg
 mode = 1
