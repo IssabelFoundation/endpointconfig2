@@ -326,9 +326,11 @@ class BaseEndpoint(object):
     
     def _prepareVarList(self):
         '''Prepare list of common variables to substitute in template '''
-       
+        data_to_hash = (
+            self._vendorname + self._model + self._serverip + self._ip + str(random.randint(0, 1024 * 1024 * 1024))
+        ).encode('utf-8')
         hash = hashlib.sha1()
-        hash.update(self._vendorname + self._model + self._serverip + self._ip + str(random.randint(0, 1024 * 1024 * 1024)))
+        hash.update(data_to_hash)
         self._authtoken_sha1 = hash.hexdigest()
         
         vars = {

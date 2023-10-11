@@ -417,8 +417,7 @@ def broadcast_change(tuple):
 	endpointChangeLog.add(tuple)
 	for fd in clients:		
 		try:
-			fd.write('%s %d\n' % (tuple[0], tuple[1]))
-			fd.flush()
+			fd.sendall(b'%s %d\n' % (tuple[0], tuple[1]))
 		except socket.error as e:
 			pass
 
