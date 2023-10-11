@@ -30,6 +30,7 @@ import re
 import urllib3
 import eventlet
 from eventlet.green import socket, urllib
+from eventlet.green.urllib.parse import urlencode
 import json
 from issabel.BaseEndpoint import BaseEndpoint
 
@@ -108,7 +109,7 @@ class Endpoint(BaseEndpoint):
         try:
             # Login into interface
             response = urllib3.urlopen('http://' + self._ip + ':8080/s_login.htm',
-                urllib.urlencode({'id' : self._http_username, 'password' : self._http_password}))
+                urlencode({'id' : self._http_username, 'password' : self._http_password}))
             body = response.read()
 
             # The body is JSON but Content-Type is set to text/plain
@@ -184,7 +185,7 @@ class Endpoint(BaseEndpoint):
 
             # Send updated variables
             response = urllib3.urlopen('http://' + self._ip + ':8080/xpdb.uds',
-                urllib.urlencode(postvars))
+                urlencode(postvars))
             body = response.read()
 
             # Apparently the ICW-1000 does not support setting the phone account
@@ -203,7 +204,7 @@ class Endpoint(BaseEndpoint):
                 postvars.update({'cnt': postvar_count})
                 # Send updated variables
                 response = urllib3.urlopen('http://' + self._ip + ':8080/xpdb.uds',
-                    urllib.urlencode(postvars))
+                    urlencode(postvars))
                 body = response.read()
 
             # Reiniciar el teléfono
@@ -213,7 +214,7 @@ class Endpoint(BaseEndpoint):
             self._unregister()
             self._setConfigured()
             return True
-        except json.DecodeError as e:
+        except json.JSONDecodeError as e:
             logging.error('Endpoint %s@%s received invalid JSON - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

@@ -30,6 +30,7 @@ from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Grandstream
 import urllib3
 from eventlet.green import socket, urllib
+from eventlet.green.urllib.parse import urlencode
 import http.cookiejar
 import re
 import time
@@ -237,7 +238,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             False, 'SessionId', None, None)        
         cookiejar.set_cookie(sesscookie)
         opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
-        response = opener.open('http://' + self._ip + '/fcgi/do?' + urllib.urlencode({
+        response = opener.open('http://' + self._ip + '/fcgi/do?' + urlencode({
             'action': 'Encrypt',
             'UserName' : http_user,
             'Password' : http_pass}))

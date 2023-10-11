@@ -30,6 +30,7 @@ import tempita
 import re
 import urllib3
 from eventlet.green import os, socket, urllib, time
+from eventlet.green.urllib.parse import urlencode
 import errno
 import hashlib
 import random
@@ -395,7 +396,7 @@ class BaseEndpoint(object):
         if postvars != None:
             opener.addheaders = [('Content-Type', 'application/x-www-form-urlencoded')]
             if not isinstance(postvars, str):
-                postvars = urllib.urlencode(postvars)
+                postvars = urlencode(postvars)
         try:
             opener.open('http://' + self._ip + urlpath, postvars)
         except urllib3.HTTPError as e:
@@ -436,7 +437,7 @@ class BaseEndpoint(object):
         except OSError as e:
             # swallow "no such file", re-raise anything else
             if e.errno != errno.ENOENT: raise e
-        f = open(filepath, 'w')
+        f = open(filepath, 'wb')
         f.write(content)
         f.close()
 

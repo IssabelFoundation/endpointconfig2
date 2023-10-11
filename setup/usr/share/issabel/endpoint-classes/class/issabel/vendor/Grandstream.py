@@ -31,6 +31,7 @@ import struct
 import eventlet
 import urllib3
 from eventlet.green import socket, urllib, os
+from eventlet.green.urllib.parse import urlencode
 import errno
 import json
 from issabel.BaseEndpoint import BaseEndpoint
@@ -48,6 +49,7 @@ class Endpoint(BaseEndpoint):
         #self._timeZone = BaseEndpoint.getTimezoneOffset() / 60 + 720
         self._timeZone = 'auto'
         self._language = 'es'
+
 
     def setExtraParameters(self, param):
         if not BaseEndpoint.setExtraParameters(self, param): return False
@@ -82,34 +84,36 @@ class Endpoint(BaseEndpoint):
         if bTelnetFailed:
             try:
                 # Try detecting GXP2200 or similar
-                try:
-                    response = urllib3.urlopen('http://' + self._ip + '/manager?action=product&time=0')
-                    htmlbody = response.read()
-                    if response.code == 200:
-                        # Response=Success\r\nProduct=GXP2200\r\n
-                        m = re.search(r'Product=(\w+)', htmlbody)
-                        if m != None: sModel = m.group(1)
-                except urllib3.HTTPError as e:
-                    # Ignore 404 error
+                conn = http.client.HTTPConnection(self._ip)
+                conn.request('GET', '/manager?action=product&time=0')
+                response = conn.getresponse()
+                if response.status == 200:
+                    htmlbody = response.read().decode('utf-8')
+                    m = re.search(r'Product=(\w+)', htmlbody)
+                    if m != None: sModel = m.group(1)
+                else:
                     pass
-                
+
                 # Try detecting Elastix LXP200 with updated firmware
                 try:
-                    response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/api.values.get?request=phone_model:1395')
-                    if response.code == 200:
+                    conn = http.client.HTTPConnection(self._ip)
+                    conn.request('GET', '/cgi-bin/api.values.get?request=phone_model:1395')
+                    response = conn.getresponse()
+                    if response.status == 200:
                         jsonvars = self._parseBotchedJSONResponse(response)
-                        if jsonvars != None and 'body' in jsonvars:
-                            logging.error('Endpoint %s@%s connection failure - %s' %
-                                (self._vendorname, self._ip, jsonvars['body']['phone_model']))
+                        if jsonvars != None and 'body' in jsonvars:    
+                            logging.info('3 Endpoint %s@%s connection correct - %s' %
+                                          (self._vendorname, self._ip, jsonvars['body']['phone_model']))
                             if '1395' in jsonvars['body'] and jsonvars['body']['1395'] == 'Elastix':
                                 self._saveVendor('Elastix')
                             if 'phone_model' in jsonvars['body']:
                                 sModel = jsonvars['body']['phone_model']
-                                logging.error('Endpoint %s@%s connection failure - %s' %
-                                (self._vendorname, self._ip, sModel))
-                except urllib3.HTTPError as e:
+                                logging.info('4 Endpoint %s@%s connection correct, model - %s' %
+                                              (self._vendorname, self._ip, sModel))
+                except http.client.HTTPException:
                     # Ignore 404 error
                     pass
+
             except Exception as e:
                 pass
         else:
@@ -131,7 +135,7 @@ class Endpoint(BaseEndpoint):
                 #if sModel == None:
                 #    print text
             except socket.error as e:
-                logging.error('Endpoint %s@%s connection failure - %s' %
+                logging.error('5 Endpoint %s@%s connection failure - %s' %
                     (self._vendorname, self._ip, str(e)))
                 return False
         
@@ -190,140 +194,106 @@ class Endpoint(BaseEndpoint):
         return True
 
     def _enableStaticProvisioning(self, vars):
+
+        def make_request(url, method='GET'):
+            try:
+                conn = http.client.HTTPConnection(self._ip)
+                conn.request(method, url)
+                response = conn.getresponse()
+                body = response.read().decode('utf-8')
+                headers = dict(response.getheaders())
+                return body, headers
+            except http.client.HTTPException as e:
+                logging.error('HTTPException: %s' % str(e))
+                return None, None
+            except Exception as e:
+                logging.error('An error occurred: %s' % str(e))
+                return None, None
+
         # Detect what kind of HTTP interface is required
         staticProvImpls = [
             # Interface for newer GXP140x firmware - JSON based
             ('GXP140x JSON', '/cgi-bin/api.values.post', self._enableStaticProvisioning_GXP140x),
-            
+    
             # Interface for old BT200 firmware or similar
-            ('BT200',        '/update.htm',              self._enableStaticProvisioning_BT200),
-            
+            ('BT200', '/update.htm', self._enableStaticProvisioning_BT200),
+    
             # Interface for GXVxxxx firmware or similar
-            ('GXVxxxx',      '/manager',                 self._enableStaticProvisioning_GXV),
-            
+            ('GXVxxxx', '/manager', self._enableStaticProvisioning_GXV),
+    
             # Interface for GXP1450 firmware or similar
-            ('GXP1450',      '/cgi-bin/update',          self._enableStaticProvisioning_GXP1450),
+            ('GXP1450', '/cgi-bin/update', self._enableStaticProvisioning_GXP1450),
         ]
+
         for impl in staticProvImpls:
-            try:
-                response = urllib3.urlopen('http://' + self._ip + impl[1])
-                body = response.read()
-                headers = response.info()
-                if 'Content-Type' in headers:
-                    if (response.info()['Content-Type'] == 'text/plain' and impl[0] != 'GXVxxxx'):
-                        continue
+            url = 'http://' + self._ip + impl[1]
+            body, headers = make_request(url)
+    
+            if headers and 'Content-Type' in headers:
+                if headers['Content-Type'] == 'text/plain' and impl[0] != 'GXVxxxx':
+                    continue
+    
+            if body:
                 logging.info('Endpoint %s@%s appears to have %s interface...' %
-                            (self._vendorname, self._ip, impl[0]))
+                             (self._vendorname, self._ip, impl[0]))
                 return impl[2](vars)
-            except urllib3.HTTPError as e:
-                if e.code != 404:
-                    logging.error('Endpoint %s@%s failed to detect %s - %s' %
-                        (self._vendorname, self._ip, impl[0], str(e)))
-                    return False
-            except socket.error as e:
-                logging.error('Endpoint %s@%s failed to connect - %s' %
-                    (self._vendorname, self._ip, str(e)))
+            else:
+                logging.error('Failed to detect %s' % impl[0])
                 return False
-        
+
         logging.warning('Endpoint %s@%s cannot identify HTTP interface, static provisioning might not work.' %
-                    (self._vendorname, self._ip))
+                        (self._vendorname, self._ip))
         return True
 
-    def _enableStaticProvisioning_GXP140x(self, vars):
+    def _parseBotchedJSONResponse(self, response):
+        body = response.read().decode('utf-8')
+        logging.info(body)
+        jsonvars = json.loads(body)
+        return jsonvars
+
+
+    def _enableStaticProvisioning_BT200(self, vars):
         try:
-            # Login into interface and get SID. Check proper Content-Type
+            # Login into interface
             cookiejar = http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(rfc2965=True))
-            opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
-            # response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/dologin',
-            response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
-                urllib.urlencode({'password' : self._http_password}))
-            body = response.read()
-            content_type = response.info()['Content-Type'].rsplit(';', 1)[0]
-            if content_type != 'application/json':
-                logging.error('Endpoint %s@%s GXP140x - dologin answered not application/json but %s' %
-                    (self._vendorname, self._ip, response.info()['Content-Type']))
-                return False
-            
-            # Check successful login and get sid
-            jsonvars = json.decode(body)
-            if not ('body' in jsonvars and 'sid' in jsonvars['body']):
-                logging.error('Endpoint %s@%s GXP140x - dologin failed login' %
+            opener = urllib3.PoolManager(cert_reqs='CERT_NONE', ca_certs=False)
+            response = opener.request('POST', 'http://' + self._ip + '/dologin.htm',
+                fields={'Login': 'Login', 'P2': self._http_password, 'gnkey': '0b82'})
+            body = response.data
+            if b'dologin.htm' in body:
+                logging.error('Endpoint %s@%s BT200 - dologin failed login' %
                     (self._vendorname, self._ip))
                 return False
-            sid = jsonvars['body']['sid']
-            
-            # Post vars with sid
-            vars.update({'sid' : sid})
-            # response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/api.values.post',
-            response = opener.open('http://' + self._ip + '/cgi-bin/api.values.post',
-                urllib.urlencode(vars))
-
-            jsonvars = self._parseBotchedJSONResponse(response)
-            if jsonvars == None:
-                logging.error('jsonvars vacio %s@%s GXP140x - vars rejected by interface - %s - %s - %s' %
-                    (self._vendorname, self._ip, urllib.urlencode(vars), jsonvars['body'], sid))
+    
+            # Force cookie version to 0
+            for cookie in cookiejar:
+                cookie.version = 0
+    
+            response = opener.request('POST', 'http://' + self._ip + '/update.htm',
+                fields={**vars, 'gnkey': '0b82'})
+            body = response.data
+            if b'dologin.htm' in body:
+                logging.error('Endpoint %s@%s BT200 - dologin failed to keep session' %
+                    (self._vendorname, self._ip))
                 return False
-            
-            if not ('response' in jsonvars and jsonvars['response'] == 'success' \
-                    and 'body' in jsonvars and 'status' in jsonvars['body'] and jsonvars['body']['status'] == 'right' ):
-                logging.error('Endpoint %s@%s GXP140x - vars rejected by interface - %s - %s - %s' %
-                    (self._vendorname, self._ip, urllib.urlencode(vars), jsonvars['body'], sid))
-                return False
-            
+    
             return True
-        except json.DecodeError as e:
-            logging.error('Endpoint %s@%s GXP140x received invalid JSON - %s' %
-                (self._vendorname, self._ip, str(e)))
-            return False
-        except urllib3.HTTPError as e:
-            logging.error('Endpoint %s@%s GXP140x failed to send vars to interface - %s' %
+        except urllib3.exceptions.HTTPError as e:
+            logging.error('Endpoint %s@%s BT200 failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
         except socket.error as e:
-            logging.error('Endpoint %s@%s GXP140x failed to connect - %s' %
+            logging.error('Endpoint %s@%s BT200 failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-
-    def _parseBotchedJSONResponse(self, response):
-        jsonvars = None
-        body = response.read()
-        if response.info():
-            content_type = response.info()['Content-Type'].rsplit(';', 1)[0]
-            if content_type != 'application/json':
-                logging.error('Endpoint %s@%s GXP140x - api.values.post answered not application/json but %s' %
-                    (self._vendorname, self._ip, response.info()['Content-Type']))
-                return None
-            jsonvars = json.decode(body)
-        else:
-            # The GXP1400 has been discovered to violate the HTTP protocol.
-            # The response for /cgi-bin/api.values.post sticks a shebang
-            # header before the HTTP headers of the response. This causes
-            # the header parsing to end early and the body gets prepended
-            # with the headers. We now have to undo this mess.
-            expectbody = False
-            for s in body.splitlines():
-                if not expectbody:
-                    m = re.search(r'Content-Type: (\S+)', s)
-                    if m != None:
-                        if m.group(1) != 'application/json':
-                            logging.error('Endpoint %s@%s GXP140x - api.values.post answered not application/json but %s' %
-                                (self._vendorname, self._ip, m.group(1)))
-                            return None
-                    if s == '':
-                        expectbody = True
-                else:
-                    # This expects the body to be a single JSON string in one line
-                    jsonvars = json.decode(s)
-                    break
-        return jsonvars
-
-    def _enableStaticProvisioning_BT200(self, vars):
+ 
+    def _enableStaticProvisioning_BT200_old(self, vars):
         try:
             # Login into interface
             cookiejar = cookielib.CookieJar(cookielib.DefaultCookiePolicy(rfc2965=True))
             opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
             response = opener.open('http://' + self._ip + '/dologin.htm',
-                urllib.urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
+                urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
             body = response.read()
             if 'dologin.htm' in body:
                 logging.error('Endpoint %s@%s BT200 - dologin failed login' %
@@ -335,7 +305,7 @@ class Endpoint(BaseEndpoint):
                 cookie.version = 0
             
             response = opener.open('http://' + self._ip + '/update.htm',
-                urllib.urlencode(vars) + '&gnkey=0b82')
+                urlencode(vars) + '&gnkey=0b82')
             body = response.read()
             if 'dologin.htm' in body:
                 logging.error('Endpoint %s@%s BT200 - dologin failed to keep session' %
@@ -352,7 +322,145 @@ class Endpoint(BaseEndpoint):
                 (self._vendorname, self._ip, str(e)))
             return False
 
+
+    def _enableStaticProvisioning_GXP140x(self, vars):
+        try:
+            # Login into interface and get SID. Check proper Content-Type
+            conn = http.client.HTTPConnection(self._ip)
+            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+            payload = urlencode({'password': self._http_password})
+            conn.request('POST', '/cgi-bin/dologin', body=payload, headers=headers)
+            response = conn.getresponse()
+
+            body = response.read().decode('utf-8')
+
+            content_type = response.headers.get('Content-Type', '').split(';', 1)[0]
+            if content_type != 'application/json':
+                logging.error('Endpoint %s@%s GXP140x - dologin answered not application/json but %s' %
+                              (self._vendorname, self._ip, content_type))
+                return False
+
+            # Check successful login and get sid
+            jsonvars = json.loads(body)
+            if not ('body' in jsonvars and 'sid' in jsonvars['body']):
+                logging.error('Endpoint %s@%s GXP140x - dologin failed login' %
+                              (self._vendorname, self._ip))
+                return False
+            sid = jsonvars['body']['sid']
+
+            # Post vars with sid
+            vars.update({'sid': sid})
+            payload = urlencode(vars)
+            conn.request('POST', '/cgi-bin/api.values.post', body=payload, headers=headers)
+            response = conn.getresponse()
+
+            jsonvars = self._parseBotchedJSONResponse(response)
+            if jsonvars is None:
+                logging.error('jsonvars vacio %s@%s GXP140x - vars rejected by interface - %s - %s - %s' %
+                              (self._vendorname, self._ip, urlencode(vars), 'N/A', sid))
+                return False
+
+            if not ('response' in jsonvars and jsonvars['response'] == 'success'
+                    and 'body' in jsonvars and 'status' in jsonvars['body'] and jsonvars['body']['status'] == 'right'):
+                logging.error('Endpoint %s@%s GXP140x - vars rejected by interface - %s - %s - %s' %
+                              (self._vendorname, self._ip, urlencode(vars), jsonvars['body'], sid))
+                return False
+
+            return True
+        except json.JSONDecodeError as e:
+            logging.error('Endpoint %s@%s GXP140x received invalid JSON - %s' %
+                          (self._vendorname, self._ip, str(e)))
+            return False
+        except http.client.HTTPException as e:
+            logging.error('Endpoint %s@%s GXP140x failed to send vars to interface - %s' %
+                          (self._vendorname, self._ip, str(e)))
+            return False
+        except socket.error as e:
+            logging.error('Endpoint %s@%s GXP140x failed to connect - %s' %
+                          (self._vendorname, self._ip, str(e)))
+            return False
+
+
     def _enableStaticProvisioning_GXV(self, vars):
+        try:
+            # Login into interface
+            http = urllib3.PoolManager()
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36'
+            }
+            response = http.request('GET', 'http://' + self._ip + '/manager?' + urlencode({
+                'action': 'login',
+                'Username': self._http_username,
+                'Secret': self._http_password,
+                'time': int(time.time())
+            }), headers=headers)
+            body = response.data
+            if b'Error' in body:
+                logging.error('Endpoint %s@%s GXV - dologin failed login' %
+                              (self._vendorname, self._ip))
+                return False
+
+            # For this interface, the variables are translated as follows: The
+            # source key of the form Pxxxx produces a variable var-dddd where
+            # dddd is a counter. The corresponding value produces a variable
+            # val-dddd with the same counter
+            varcount = 0
+            submitvars = {
+                'action': 'put',
+                'time': int(time.time())
+            }
+            for pk in vars:
+                varkey = 'var-' + ('%04d' % (varcount,))
+                varval = 'val-' + ('%04d' % (varcount,))
+                submitvars[varkey] = pk[1:]
+                submitvars[varval] = vars[pk]
+                varcount += 1
+
+            headers = {
+                'User-Agent': headers['User-Agent'],
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+
+            response = http.request('POST', 'http://' + self._ip + '/manager', fields=submitvars, headers=headers)
+            body = response.data
+            if not b'Success' in body:
+                logging.error('Endpoint %s@%s GXV - dologin failed to keep session' %
+                              (self._vendorname, self._ip))
+                return False
+
+            # Phonebook programming is a special case.
+            submitvars = {
+                'action': 'putdownphbk',
+                'time': int(time.time()),
+                'url': vars['P331'],
+                'mode': 2,  # HTTP
+                'clear-old': 1,
+                'flag': 1,  # 1 forces download right now
+                'interval': vars['P332'],
+                'rm-redup': 1
+            }
+
+            response = http.request('POST', 'http://' + self._ip + '/manager', fields=submitvars, headers=headers)
+            body = response.data
+            if not b'Success' in body:
+                logging.error('Endpoint %s@%s GXV - could not reprogram phonebook' %
+                              (self._vendorname, self._ip))
+
+            return True
+        except http.client.HTTPException as e:
+            logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
+                         (self._vendorname, self._ip, str(e)))
+            return True
+        except urllib3.exceptions.HTTPError as e:
+            logging.error('Endpoint %s@%s GXV failed to send vars to interface - %s' %
+                          (self._vendorname, self._ip, str(e)))
+            return False
+        except socket.error as e:
+            logging.error('Endpoint %s@%s GXV failed to connect - %s' %
+                          (self._vendorname, self._ip, str(e)))
+            return False
+
+    def _enableStaticProvisioning_GXV_old(self, vars):
         try:
             # Login into interface
             opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
@@ -360,7 +468,7 @@ class Endpoint(BaseEndpoint):
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36',
             }
             opener.addheaders = headers.items()
-            response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode({
+            response = opener.open('http://' + self._ip + '/manager?' + urlencode({
                 'action': 'login',
                 'Username' : self._http_username,
                 'Secret' : self._http_password,
@@ -386,7 +494,7 @@ class Endpoint(BaseEndpoint):
                 submitvars[varkey] = pk[1:]
                 submitvars[varval] = vars[pk]
                 varcount += 1
-            response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode(submitvars))
+            response = opener.open('http://' + self._ip + '/manager?' + urlencode(submitvars))
             body = response.read()
             if not ('Success' in body):
                 logging.error('Endpoint %s@%s GXV - dologin failed to keep session' %
@@ -406,8 +514,8 @@ class Endpoint(BaseEndpoint):
             }
             # This generates problems with GXV3240
             # logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
-            #    (self._vendorname, self._ip, 'http://' + self._ip + '/manager?' + urllib.urlencode(submitvars)))
-            # response = opener.open('http://' + self._ip + '/manager?' + urllib.urlencode(submitvars))
+            #    (self._vendorname, self._ip, 'http://' + self._ip + '/manager?' + urlencode(submitvars)))
+            # response = opener.open('http://' + self._ip + '/manager?' + urlencode(submitvars))
             # body = response.read()
             # if not ('Success' in body):
             #    logging.error('Endpoint %s@%s GXV - could not reprogram phonebook' %
@@ -430,9 +538,35 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXP1450(self, vars):
         try:
             # Login into interface
+            http = urllib3.PoolManager()
+            response = http.request('POST', 'http://' + self._ip + '/cgi-bin/dologin',
+                fields={'Login': 'Login', 'P2': self._http_password, 'gnkey': '0b82'})
+            body = response.data
+            if b'dologin' in body:
+                logging.error('Endpoint %s@%s GXP1450 - dologin failed login' %
+                    (self._vendorname, self._ip))
+                return False
+    
+            response = http.request('POST', 'http://' + self._ip + '/cgi-bin/update',
+                fields={**vars, 'gnkey': '0b82'})
+            body = response.data
+            if b'dologin' in body:
+                logging.error('Endpoint %s@%s GXP1450 - dologin failed to keep session' %
+                    (self._vendorname, self._ip))
+                return False
+
+            return True
+        except socket.error as e:
+            logging.error('Endpoint %s@%s GXP1450 failed to connect - %s' %
+                (self._vendorname, self._ip, str(e)))
+            return False
+
+    def _enableStaticProvisioning_GXP1450_old(self, vars):
+        try:
+            # Login into interface
             opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
             response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
-                urllib.urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
+                urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
             body = response.read()
             if 'dologin' in body:
                 logging.error('Endpoint %s@%s GXP1450 - dologin failed login' %
@@ -440,7 +574,7 @@ class Endpoint(BaseEndpoint):
                 return False
 
             response = opener.open('http://' + self._ip + '/cgi-bin/update',
-                urllib.urlencode(vars) + '&gnkey=0b82')
+                urlencode(vars) + '&gnkey=0b82')
             body = response.read()
             if 'dologin' in body:
                 logging.error('Endpoint %s@%s GXP1450 - dologin failed to keep session' %
@@ -451,7 +585,8 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s GXP1450 failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        
+       
+ 
 
     def _rebootbytelnet(self):
         '''Start reboot of Grandstream phone by telnet'''
@@ -508,11 +643,11 @@ class Endpoint(BaseEndpoint):
         except socket.timeout as e:
             telnet.close()
             if not deliberatetimeout:
-                logging.error('Endpoint %s@%s connection failure - %s' %
+                logging.error('1 Endpoint %s@%s connection failure - %s' %
                     (self._vendorname, self._ip, str(e)))
                 return False
         except socket.error as e:
-            logging.error('Endpoint %s@%s connection failure - %s' %
+            logging.error('2 Endpoint %s@%s connection failure - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
         return True        
@@ -520,26 +655,30 @@ class Endpoint(BaseEndpoint):
     def _rebootbyssh(self):
         '''Start reboot of Grandstream phone by ssh'''
         oldtimeout = socket.getdefaulttimeout()
+        #oldtimeout = 15
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
-            ssh.connect(self._ip, username=self._ssh_username, password=self._ssh_password, allow_agent=False,look_for_keys=False, timeout=5)
+            ssh.connect(self._ip, username=self._ssh_username, password=self._ssh_password, allow_agent=False,look_for_keys=False, timeout=15)
             stdin, stdout, stderr = ssh.exec_command('reboot')            
-            logging.info('Endpoint %s@%s - about to set timeout of %d on stdout' % (self._vendorname, self._ip, oldtimeout,))            
-            stdout.channel.settimeout(5)
+
+            logging.info('Endpoint %s@%s - about to set timeout of %d on stdout' % (self._vendorname, self._ip, oldtimeout,))
+            stdout.channel.settimeout(15)
             try:
                 s = stdout.read()
                 logging.info('Endpoint %s@%s - answer follows:\n%s' % (self._vendorname, self._ip, s,))
             except socket.error as e:
                 pass
-            ssh.close()
+            finally:
+                ssh.close()
             return True
+
         except paramiko.AuthenticationException as e:
-            logging.error('Endpoint %s@%s failed to authenticate ssh - %s' %
-                (self._vendorname, self._ip, str(e)))
+            logging.error('Endpoint %s@%s failed to authenticate ssh - %s (%s:%s)' %
+                (self._vendorname, self._ip, str(e), self._ssh_username, self._ssh_password))
         except paramiko.SSHException as e:
-            logging.warning('Endpoint %s@%s failed to authenticate ssh - %s' %
-                (self._vendorname, self._ip, str(e)))
+            logging.warning('Endpoint %s@%s failed to authenticate ssh - %s (%s:%s)' %
+                (self._vendorname, self._ip, str(e), self._ssh_username, self._ssh_password))
             return False
         except urllib3.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
@@ -551,16 +690,32 @@ class Endpoint(BaseEndpoint):
             return False
 
     def _rebootbyhttp(self):
-        opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
-        response = opener.open('http://' + self._ip + '/cgi-bin//api-sys_operation?passcode=' + self._http_password + '&request=REBOOT')
-        jsonvars = self._parseBotchedJSONResponse(response)
-        if jsonvars == None:
-            return False 
-        if not ('response' in jsonvars and jsonvars['response'] == 'success'):
-            logging.error('Endpoint %s@%s unimplemented reboot by HTTP' %
-                (self._vendorname, self._ip))
+        try:
+            # Establish a connection to the server
+            conn = http.client.HTTPConnection(self._ip)
+            url = f'/cgi-bin/api-sys_operation?passcode={self._http_password}&request=REBOOT'
+    
+            # Send an HTTP GET request
+            conn.request('GET', url)
+    
+            # Get the response
+            response = conn.getresponse()
+    
+            # Read the response data and decode it
+            data = response.read().decode('utf-8')
+    
+            # Parse the response as JSON
+            jsonvars = json.loads(data)
+    
+            if not ('response' in jsonvars and jsonvars['response'] == 'success'):
+                logging.error('Endpoint %s@%s unimplemented reboot by HTTP' %
+                              (self._vendorname, self._ip))
+                return False
+    
+            return True
+        except Exception as e:
+            logging.error(f'An error occurred: {str(e)}')
             return False
-        return True
 
     def _hashTableGrandstreamConfig(self):
         stdvars = self._prepareVarList()
@@ -734,16 +889,25 @@ class Endpoint(BaseEndpoint):
     def _encodeGrandstreamConfig(self, vars):
         # Encode configuration variables. The gnkey must be the last item in
         # order to prevent other variables from being followed by a null byte.
-        payload = urllib.urlencode(vars) + '&gnkey=0b82'
-        if (len(payload) & 1) != 0: payload = payload + '\x00'
-        
+        payload = urlencode(vars) + '&gnkey=0b82'
+        if (len(payload) & 1) != 0:
+            payload += '\x00'
+
         # Calculate block length in words, plus checksum
-        length = 8 + len(payload) / 2
-        binmac = self._mac.replace(':', '').lower().decode('hex')
-        bindata = struct.pack('>LH6s', length, 0, binmac) + '\x0d\x0a\x0d\x0a' + payload
-        wordsize = len(bindata) / 2
-        checksum = 0x10000 - (sum(struct.unpack('>' + str(wordsize) +'H', bindata)) & 0xFFFF)
-        bindata = struct.pack('>LH6s', length, checksum, binmac) + '\x0d\x0a\x0d\x0a' + payload
-        
-        return bindata
-    
+        length = 8 + len(payload) // 2
+
+        # Convert mac address to bytes
+        binmac_no_colons = self._mac.replace(':', '').lower()
+        binmac = bytes.fromhex(binmac_no_colons)
+
+        # Pack the data into bytes
+        bindata = struct.pack('>LH6s' + str(len(payload)) + 's', length, 0, binmac, payload.encode('utf-8'))
+        #bindata = struct.pack('>LH6s', length, 0, binmac) + b'\x0d\x0a\x0d\x0a' + payload
+  
+        wordsize = len(bindata) // 2
+        checksum = 0x10000 - (sum(struct.unpack('>' + str(wordsize) + 'H', bindata)) & 0xFFFF)
+
+        # Repack the data with the correct checksum
+        bindata = struct.pack('>LH6s', length, checksum, binmac) + b'\x0d\x0a\x0d\x0a' + payload.encode('utf-8')
+
+        return bindata  

@@ -31,6 +31,7 @@ import issabel.BaseEndpoint
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
 from eventlet.green import http.client, urllib
+from eventlet.green.urllib.parse import urlencode
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -126,7 +127,7 @@ class Endpoint(BaseEndpoint):
 
         # The Atlinks (Yealink-derived) firmware is very picky about the order 
         # of the POST variables. The PAGEID variable must appear *before* 
-        # CONFIG_DATA. Therefore, urllib.urlencode() cannot be used as-is, 
+        # CONFIG_DATA. Therefore, urlencode() cannot be used as-is, 
         # because it places variables in alphabetical sort.
         postvars =  'PAGEID=16&CONFIG_DATA=' + urllib.quote_plus(separator + separator.join(provvars))         
 

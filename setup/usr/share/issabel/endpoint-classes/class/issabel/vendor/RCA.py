@@ -31,6 +31,7 @@ import issabel.vendor.Escene
 import urllib3
 import eventlet
 from eventlet.green import socket, urllib, os
+from eventlet.green.urllib.parse import urlencode
 import errno
 import re
 import xml.dom.minidom
@@ -174,7 +175,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
             # Login into interface
             opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
             response = opener.open('http://' + self._ip + '/console/j_security_check',
-                urllib.urlencode({
+                urlencode({
                     'submit' : 'Login',
                     'j_username' : self._http_username,
                     'j_password' : self._http_password
@@ -216,7 +217,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
             
             # Attempt to set just the provisioning server
             response = opener.open('http://' + self._ip + '/console/general',
-                urllib.urlencode({
+                urlencode({
                     'COMMAND' : 'AP',
                     '@p.provisioningServer' : self._serverip,
                     '@dhcp_option_protocol' : 'TFTP'

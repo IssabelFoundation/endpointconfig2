@@ -31,6 +31,7 @@ import issabel.BaseEndpoint
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
 from eventlet.green import http.client, urllib, socket
+from eventlet.green.urllib.parse import urlencode
 import base64
 
 class Endpoint(BaseEndpoint):
@@ -189,7 +190,7 @@ class Endpoint(BaseEndpoint):
             'days'          :   0,
             'postList'      :   self._serverip,
         }
-        postbody = urllib.urlencode(postvars)
+        postbody = urlencode(postvars)
         urlpath = '/configurationServer.html'
         postrequest = (\
             'POST %s HTTP/1.1\r\n' +\

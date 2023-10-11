@@ -29,6 +29,7 @@ import logging
 import re
 import urllib3
 from eventlet.green import socket, urllib, os, http.client
+from eventlet.green.urllib.parse import urlencode
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
 
@@ -228,7 +229,7 @@ class Endpoint(BaseEndpoint):
             }
             response = urllib3.urlopen(
                 'http://' + self._ip + '/index.htm',
-                urllib.urlencode(postvars))
+                urlencode(postvars))
             htmlbody = response.read()
             if not 'Set-Cookie' in response.headers:
                 logging.error('Endpoint %s@%s invalid username or password' %
@@ -244,7 +245,7 @@ class Endpoint(BaseEndpoint):
                 postvars = {'eula' : m.group(1), 'save' : 'Submit'}
                 response = urllib3.urlopen(urllib3.Request(
                     'http://' + self._ip + '/index.htm',
-                    urllib.urlencode(postvars),
+                    urlencode(postvars),
                     {'Cookie' : self._cookie_v2}))
                 htmlbody = response.read()
             return True
@@ -260,7 +261,7 @@ class Endpoint(BaseEndpoint):
     def _setProvisionServer_V1(self):
         try:
             postvars = {'setting_server': 'tftp://' + self._serverip, 'Settings' : 'Save' }
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_update.htm', urllib.urlencode(postvars))
+            response = urllib3.urlopen('http://' + self._ip + '/advanced_update.htm', urlencode(postvars))
             htmlbody = response.read()
             return True
         except urllib3.URLError as e:
@@ -340,7 +341,7 @@ class Endpoint(BaseEndpoint):
                 })
             response = urllib3.urlopen(urllib3.Request(
                 'http://' + self._ip + '/network.htm',
-                urllib.urlencode(postvars),
+                urlencode(postvars),
                 {'Cookie' : self._cookie_v2}))
             htmlbody = response.read()
             if not 'Please reboot the device' in htmlbody:
@@ -376,7 +377,7 @@ class Endpoint(BaseEndpoint):
                     'Settings'      :   'Save',
                     'ignore_dhcp_findings' : 'dns_server1 dns_server2 gateway ip_adr netmask',
                 }
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', urllib.urlencode(postvars))
+            response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', urlencode(postvars))
             htmlbody = response.read()
             if 'CONFIRM_REBOOT' in htmlbody:
                 response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', 'CONFIRM_REBOOT=Reboot')
@@ -427,7 +428,7 @@ class Endpoint(BaseEndpoint):
         try:
             response = urllib3.urlopen(urllib3.Request(
                 'http://' + self._ip + '/update.htm',
-                urllib.urlencode({'reboot' : 'Reboot'}),
+                urlencode({'reboot' : 'Reboot'}),
                 {'Cookie' : self._cookie_v2}))
             htmlbody = response.read()
             if response.code == 200:

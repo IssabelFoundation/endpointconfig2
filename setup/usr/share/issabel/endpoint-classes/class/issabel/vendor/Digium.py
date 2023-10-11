@@ -331,7 +331,7 @@ class Endpoint(BaseEndpoint):
     @staticmethod
     def _writeDPMAConfig(configsections):
         try:
-            f = open('/etc/asterisk/res_digium_phone.conf', 'w')
+            f = open('/etc/asterisk/res_digium_phone.conf', 'wb')
             for currentsection in configsections:
                 f.write(currentsection['rawtext'])
             f.close()
@@ -401,7 +401,7 @@ class Endpoint(BaseEndpoint):
             
             # Write updated file and reload chan_sip
             if modified:
-                f = open('/etc/asterisk/sip_general_custom.conf', 'w')
+                f = open('/etc/asterisk/sip_general_custom.conf', 'wb')
                 f.write(content)
                 f.close()
                 

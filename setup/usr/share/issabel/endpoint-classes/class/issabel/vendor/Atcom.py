@@ -32,6 +32,7 @@ import requests
 from issabel.BaseEndpoint import BaseEndpoint
 import eventlet
 from eventlet.green import socket, http.client, urllib
+from eventlet.green.urllib.parse import urlencode
 telnetlib = eventlet.import_patched('telnetlib')
 
 class Endpoint(BaseEndpoint):
@@ -429,7 +430,7 @@ class Endpoint(BaseEndpoint):
             'goto'      :   'Logon',
             'URL'       :   '/'
         }
-        postdata = urllib.urlencode(postvars)
+        postdata = urlencode(postvars)
         http.request('POST', noncesource, postdata, extraheaders)
        
         resp = http.getresponse()
