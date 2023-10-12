@@ -29,7 +29,8 @@ import logging
 import re
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import socket, http.client, urllib
+from eventlet.green import socket, urllib
+import http.client
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):

@@ -30,7 +30,8 @@ import re
 import issabel.BaseEndpoint
 import urllib3
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import http.client, urllib, socket
+from eventlet.green import urllib, socket
+import http.client
 from eventlet.green.urllib.parse import urlencode
 import base64
 

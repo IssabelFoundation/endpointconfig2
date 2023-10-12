@@ -28,7 +28,8 @@
 import logging
 import re
 import urllib3
-from eventlet.green import socket, urllib, os, http.client
+from eventlet.green import socket, urllib, os
+import http.client
 from eventlet.green.urllib.parse import urlencode
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint

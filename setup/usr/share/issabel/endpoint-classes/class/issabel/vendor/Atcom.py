@@ -31,7 +31,8 @@ import re
 import requests
 from issabel.BaseEndpoint import BaseEndpoint
 import eventlet
-from eventlet.green import socket, http.client, urllib
+from eventlet.green import socket, urllib
+import http.client
 from eventlet.green.urllib.parse import urlencode
 telnetlib = eventlet.import_patched('telnetlib')
 
@@ -375,7 +376,7 @@ class Endpoint(BaseEndpoint):
         if m == None:
             logging.error('Endpoint %s@%s failed to locate config version in HTTP response' %
                 (self._vendorname, self._ip))
-            print htmlbody
+            print(htmlbody)
             return None
         if (resource == '/config.txt') or (resource == '/default_user_config.txt'):
             return m.group(1)
