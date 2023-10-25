@@ -20,7 +20,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
+  $Id: contacts.php, Wed 25 Oct 2023 11:46:02 AM EDT, nicolas@issabel.com
 */
 
 define('ISSABEL_BASE', '/var/www/html/');
@@ -76,6 +76,8 @@ if(!$pACL->authenticateUser($exten, $pass_md5)) {
      print 'Invalid hash';
      exit;
 } else {
+    $dsn = generarDSNSistema('asteriskuser', 'endpointconfig', ISSABEL_BASE);
+    $db = new paloDB($dsn);
     $vendor = new $sManufacturer($db, 'http://'.$_SERVER['SERVER_ADDR'].'/modules/endpoint_configurator/phonesrv/contacts.php/'.$sManufacturer.'/'.$sAuthToken);
     $vendor->handle("exten$exten", $pathList);
 }
