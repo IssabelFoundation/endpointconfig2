@@ -55,13 +55,18 @@ class BaseVendorResource
      */
     protected function obtenerUsuarioIssabel($id_endpoint)
     {
-        // Lista de cuentas del endpoint, por orden de prioridad
-    	$recordset = $this->_db->fetchTable(
-            'SELECT account FROM endpoint_account WHERE id_endpoint = ? ORDER BY priority',
-            TRUE, array($id_endpoint));
-        if (!is_array($recordset)) return NULL;
-        $accounts = array();
-        foreach ($recordset as $tupla) $accounts[] = $tupla['account'];
+        if(substr($id_endpoint,0,5)=='exten') {
+             // for passing exten/pass credentials outside provisioned phones
+             $accounts=array(substr($id_endpoint,5));
+        } else {
+            // Lista de cuentas del endpoint, por orden de prioridad
+            $recordset = $this->_db->fetchTable(
+                'SELECT account FROM endpoint_account WHERE id_endpoint = ? ORDER BY priority',
+                TRUE, array($id_endpoint));
+            if (!is_array($recordset)) return NULL;
+            $accounts = array();
+            foreach ($recordset as $tupla) $accounts[] = $tupla['account'];
+        }
         
         global $arrConf;
         $pdbACL = new paloDB($arrConf['issabel_dsn']['acl']);
@@ -94,7 +99,7 @@ class BaseVendorResource
         $sBuscarNombre = NULL)
     {
         global $arrConf;
-    	$result = array(
+        $result = array(
             'contacts'  =>  NULL,
             'fc'        =>  NULL,
             'fm'        =>  NULL,
@@ -107,7 +112,7 @@ class BaseVendorResource
         case 'internal':
             $astDSN = generarDSNSistema('asteriskuser', 'asterisk', ISSABEL_BASE.'/');
             if (!is_null($sBuscarNombre)) {
-            	$field_name = 'name';
+                $field_name = 'name';
                 $field_pattern = "%{$sBuscarNombre}%";
             }
             $result['contacts'] = $addressBook->getDeviceFreePBX_Completed($astDSN, NULL, NULL, $field_name, $field_pattern);
@@ -115,13 +120,13 @@ class BaseVendorResource
         case 'external':
             $result['contacts'] = $addressBook->getAddressBook(NULL, NULL, $field_name, $field_pattern, FALSE, $id_user);
             if (is_array($result['contacts']) && !is_null($sBuscarNombre)) {
-            	$t = array();
+                $t = array();
                 foreach ($result['contacts'] as $contact) {
                     $fullname = $contact['name'];
                     if (isset($contact['last_name'])) {
                         $fullname .= ' '.$contact['last_name'];
                     }
-                	if ((stripos($fullname, $sBuscarNombre) !== FALSE)) $t[] = $contact;
+                    if ((stripos($fullname, $sBuscarNombre) !== FALSE)) $t[] = $contact;
                 }
                 $result['contacts'] = $t;
             }
@@ -150,15 +155,15 @@ class BaseVendorResource
      */
     protected function listarCodigosFuncionalidades()
     {
-    	$recordset = $this->_db->fetchTable(
+        $recordset = $this->_db->fetchTable(
             'SELECT IFNULL(customcode, defaultcode) AS code, description '.
             'FROM asterisk.featurecodes WHERE enabled = 1 ORDER BY code', TRUE);
         if (!is_array($recordset)) {
-        	return NULL;
+            return NULL;
         }
         $r = array();
         foreach ($recordset as $tupla) {
-        	if (preg_match('/\d/', $tupla['code'])) $r[] = $tupla;
+            if (preg_match('/\d/', $tupla['code'])) $r[] = $tupla;
         }
         return $r;
     }

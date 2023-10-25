@@ -26,7 +26,7 @@
 # +----------------------------------------------------------------------+
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
-import md5
+import hashlib
 import re
 import requests
 from issabel.BaseEndpoint import BaseEndpoint
@@ -108,7 +108,7 @@ class Endpoint(BaseEndpoint):
                 http = http.client.HTTPConnection(self._ip)
                 http.request('GET', '/index.asp')
                 resp = http.getresponse()
-                htmlbody = resp.read()
+                htmlbody = resp.read().decode('utf-8')
                 http.close()
                 m = re.search(r'Product Name : .+?>(\w+)<', htmlbody)
                 if m != None: sModel = m.group(1)
@@ -383,13 +383,13 @@ class Endpoint(BaseEndpoint):
         return m.group(2)
 
     def _setupAtcomAuthentication(self):
-        http = http.client.HTTPConnection(self._ip)
+        myhttp = http.client.HTTPConnection(self._ip)
 
         noncesources = ('/', '/', '/right.htm')
         for noncesource in noncesources:
-            http.request('GET', noncesource, None, {'Connection' : 'keep-alive'})
-            resp = http.getresponse()
-            htmlbody = resp.read()
+            myhttp.request('GET', noncesource, None, {'Connection' : 'keep-alive'})
+            resp = myhttp.getresponse()
+            htmlbody = resp.read().decode('utf-8')
             session = requests.Session()
             mcookie = session.cookies.get_dict()
             response = session.get('http://' + self._ip)
@@ -397,7 +397,7 @@ class Endpoint(BaseEndpoint):
             if not resp.status in (200, 404):
                 logging.error('Endpoint %s@%s failed to fetch nonce for HTTP configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))
-                http.close()
+                myhttp.close()
                 return (None, None)
             elif resp.status == 200:
                 m = re.search(r'<input type="hidden" name="nonce" value="([0-9a-zA-Z]+)">', htmlbody)
@@ -412,7 +412,7 @@ class Endpoint(BaseEndpoint):
         if m == None:
             logging.error('Endpoint %s@%s failed to locate nonce in HTTP response' %
                 (self._vendorname, self._ip))
-            http.close()
+            myhttp.close()
             return (None, None)
         nonce = m.group(1)
         # Identify firmware
@@ -424,24 +424,27 @@ class Endpoint(BaseEndpoint):
             'Cookie' : 'auth=' + nonce,
             'Content-Type' : 'application/x-www-form-urlencoded'
         }
+
+        hashed_string = ':'.join((self._http_username, self._http_password, nonce)).encode('utf-8')
+
         postvars = {
             'encoded'   :   self._http_username + ':' +
-                md5.new(':'.join((self._http_username, self._http_password, nonce))).hexdigest(),
+                hashlib.md5(hashed_string).hexdigest(),
             'nonce'     :   nonce,
             'goto'      :   'Logon',
             'URL'       :   '/'
         }
         postdata = urlencode(postvars)
-        http.request('POST', noncesource, postdata, extraheaders)
+        myhttp.request('POST', noncesource, postdata, extraheaders)
        
-        resp = http.getresponse()
+        resp = myhttp.getresponse()
         if resp.status != 200:
             logging.error('Endpoint %s@%s failed to fetch login result - got response code %s' %
                 (self._vendorname, self._ip, resp.status))
-            http.close()
+            myhttp.close()
             return (None, None)
-        htmlbody = resp.read()
-        return (http, nonce)
+        htmlbody = resp.read().decode('utf-8')
+        return (myhttp, nonce)
 
     def _cleanupAtcomAuthentication(self, http, nonce):
         # Got page, log out of HTTP interface
@@ -452,7 +455,7 @@ class Endpoint(BaseEndpoint):
         }
         http.request('POST', '/LogOut.htm', 'DefaultLogout=Logout', extraheaders)
         resp = http.getresponse()
-        htmlbody = resp.read()
+        htmlbody = resp.read().decode('utf-8')
         if resp.status != 200:
             logging.error('Endpoint %s@%s failed to logout from phone - got response code %s' %
                 (self._vendorname, self._ip, resp.status))
@@ -478,7 +481,7 @@ class Endpoint(BaseEndpoint):
             for resource in urlsProbe:
                 http.request('GET', resource, None, {'Connection' : 'keep-alive', 'Cookie' : 'auth=' + nonce})
                 resp = http.getresponse()
-                htmlbody = resp.read()
+                htmlbody = resp.read().decode('utf-8')
                 if resp.status == 200:
                     htmlres = (resource, htmlbody)
                     break
@@ -540,7 +543,7 @@ class Endpoint(BaseEndpoint):
             http.request('POST', '/goform/submit_upload_configfile', postdata,
                 { 'Content-Type' : ' multipart/form-data; boundary=' + boundary })
             resp = http.getresponse()
-            htmlbody = resp.read()
+            htmlbody = resp.read().decode('utf-8')
             if resp.status != 200:
                 logging.error('Endpoint %s@%s failed to post configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))
