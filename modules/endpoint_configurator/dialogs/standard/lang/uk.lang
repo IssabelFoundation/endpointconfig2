@@ -1,0 +1,100 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 0.5                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2006 Palosanto Solutions S. A.                         |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  |                                                                      |
+  | Software distributed under the License is distributed on an "AS IS"  |
+  | basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See  |
+  | the License for the specific language governing rights and           |
+  | limitations under the License.                                       |
+  +----------------------------------------------------------------------+
+  | The Initial Developer of the Original Code is PaloSanto Solutions    |
+  +----------------------------------------------------------------------+
+  $Id: uk.lang,v 1.7 2023/11/10 00:36:42 LLC LeNET support@lenet.com.ua Exp $ */
+global $arrLangModule;
+$arrLangModule = array(
+    "Information" => "Інформація",
+    "Custom credentials" => "Облікові дані",
+    "Custom endpoint properties" => "Параметри телефона",
+    "Static configuration requires the following network parameter" => "Для статичної конфігурації потрібен наступний параметр мережі",
+    "The following network parameter is not a valid IPv4 address" => "Наступний мережевий параметр не є дійсною IPv4-адресою",
+    "Custom endpoint property collides with the following read-only property" => "Параметри користувацького телефона стикається з наступною властивістю тільки для читання",
+    "Custom endpoint property collides with the following read-write property" => "Параметри користувацького телефона стикається з наступною властивістю читання-запису",
+    "Malformed request" => "Неправильно сформований запит",
+    "Account is missing required property" => "Обліковий запис не має необхідної властивості",
+    "Unsupported tech" => "Непідтримувані технології",
+    "Duplicate account" => "Duplicate account",
+    "(internal) Failed to check model" => "(внутрішній) Не вдалося перевірити модель",
+    "Endpoint not found" => "Обладнання не знайдена",
+    "Model not set for endpoint" => "Модель не задана для обладнання",
+    "(internal) Failed to check account limit" => "(внутрішнє) Не вдалося перевірити ліміт облікового запису",
+    "Maximum number of accounts exceeded" => "Перевищено максимальну кількість облікових записів",
+    "Endpoint does not support static IP address" => "Обладнання не підтримує статичну IP адресу",
+    "Endpoint does not support dynamic IP address" => "Обладнання не підтримує динамічну IP адресу",
+    "(internal) Failed to load model properties" => "(внутрішній) Не вдалося завантажити параметри моделі",
+    "Maximum number of accounts exceeded for tech" => "Перевищено максимальну кількість акаунтів для tech",
+    "(internal) Failed to remove old properties" => "(внутрішній) Не вдалося видалити старі параметри",
+    "(internal) Failed to insert new property" => "(внутрішній) Не вдалося вставити нові параметри",
+    "(internal) Failed to read available accounts" => "(внутрішній) Не вдалося прочитати доступні облікові записи",
+    "Account not found" => "Обліковий запис не знайдено",
+    "Account claimed by another endpoint" => "Обліковий запис, на який претендує інше обладнання",
+    "(internal) Failed to remove old account associations" => "(внутрішній) Не вдалося видалити старі асоціації облікових записів",
+    "(internal) Failed to insert account association" => "(внутрішній) Не вдалося вставити асоціацію облікового запису",
+    "(internal) Failed to insert account property" => "(внутрішній) Не вдалося вставити параметри облікового запису",
+    "(internal) Failed to update modification time" => "(внутрішній) Не вдалося оновити час зміни",
+    "(unknown)" => "(невідомо)",
+    "Yes" => "Так",
+    "No" => "Ні",
+    "(unknown/not detected)" => "(невідомо/не виявлено)",
+    "Maximum number of SIP accounts" => "Максимальна кількість акаунтів SIP",
+    "Maximum number of IAX2 accounts" => "Максимальна кількість акаунтів IAX2",
+    "MAC" => "MAC",
+    "This flag is set if phone can get an IP address via DHCP" => "Цей прапорець встановлено, якщо телефон може отримати IP-адресу через DHCP",
+    "Dynamic IP supported" => "Підтримується динамічний IP",
+    "This flag is set if phone can be configured to use a static IP address" => "Цей прапорець встановлюється, якщо телефон підтримує статичну IP адресу.",
+    "Static IP supported" => "Підтримується статичний IP",
+    "This flag is set if phone supports QoS with VLAN" => "Цей прапор встановлено якщо телефон підтримує QoS із VLAN",
+    "VLAN supported" => "Підтримується VLAN",
+    "This flag is set if phone can query its configuration without cooperation of DHCP" => "Цей прапор встановлено якщо телефон може запитувати свою конфігурацію без співпраці з DHCP",
+    "Static provisioning supported" => "Підтримується статична ініціалізація",
+    "Unassigned accounts" => "Непризначені акаунти",
+    "Assigned accounts" => "Призначені акаунти",
+    "Properties for" => "Параметри для",
+    "No account selected." => "Акаунт не вибрано.",
+    "Dynamic IP (DHCP)" => "Динамічний IP (DHCP)",
+    "Static IP" => "Статичний IP",
+    "Static network attributes" => "Статичні атрибути мережі",
+    "IP" => "IP",
+    "Network mask" => "Маска мережі",
+    "Gateway" => "Шлюз",
+    "Primary DNS" => "Основний DNS",
+    "Secondary DNS" => "Додатковий DNS",
+    "Telnet username" => "Ім'я користувача Telnet",
+    "Telnet password" => "Пароль Telnet",
+    "HTTP username" => "Ім'я користувача HTTP",
+    "HTTP password" => "Пароль HTTP",
+    "SSH username" => "Ім'я користувача SSH",
+    "SSH password" => "Пароль SSH",
+    "DIALOG_STANDARD_PROPERTIES_MESSAGE" =>
+        "Будь-які додаткові налаштування, необхідні для правильної конфігурації кінцевого пристрою ".
+        "які не відображаються на інших екранах, слід ввести тут. Майте на увазі ".
+        "що не всі бекенди постачальників розпізнають всі можливі параметри. Будь-які ".
+        "нерозпізнані параметри будуть проігноровані. Однак, неправильно сформовані відомі ".
+        "параметри можуть перешкодити успішному налаштуванню обладнання. Всі ".
+        "параметри та значення чутливі до регістру.",
+    "Property" => "Власність",
+    "Value" => "Значення",
+    "Invalid endpoint ID" => "Неправильний ID обладнання",
+    'Registered at' => 'Зареєстровано за',
+    'This account is in use by an unsupported/unscanned host' => 'Цей обліковий запис використовується непідтримуваним/несканованим хостом',
+);
+?>

@@ -1,0 +1,110 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+   Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel Version 4.0                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2017 Issabel Foundation                                |
+  | Copyright (c) 2006 Palosanto Solutions S. A.                         |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  |                                                                      |
+  | Software distributed under the License is distributed on "AS IS"     |
+  | basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See  |
+  | the License for the specific language governing rights and           |
+  | limitations under the License.                                       |
+  +----------------------------------------------------------------------+
+  | The Initial Developer of the Original Code is PaloSanto Solutions    |
+  |                                                                      |
+  | Translated by: LLC LeNET                                             |
+  | Email: support@lenet.com.ua                                          |
+  +----------------------------------------------------------------------+
+  $Id: uk.lang,v 1.7 2023-10-29 14:10:36 LLC LENET support@lenet.ua Exp $ */
+global $arrLangModule;
+$arrLangModule=array(
+	"Configure" => "Налаштувати",
+	"Endpoint Configurator" => "Конфігуратор Кінцевих Пристроїв",
+	"Showing" => "Показано",
+	"Scan network for endpoints" => "Сканувати мережу на предмет кінцевих пристроїв",
+	"Step" => "Крок",
+	"Apply configuration to all selected endpoints" => "Застосувати конфігурацію до всіх обраних кінцевих пристроїв",
+	"Remove configuration for selected endpoints" => "Видалити конфігурацію для обраних кінцевих пристроїв",
+	"Download list of configurable endpoints" => "Завантажити список кінцевих пристроїв що настроюються",
+	"CSV (Legacy)" => "CSV (Застарілий)",
+	"XML" => "XML",
+	"CSV (nested)" => "CSV (Вбудований)",
+	"Upload list of endpoint configuration" => "Завантажити список конфігурації кінцевого обладнання",
+	"View log of last configuration" => "Переглянути журнал останнього налаштування",
+	"MAC Address" => "MAC Адреса",
+	"Current IP" => "Поточний IP",
+	"Manufacturer" => "Виробник",
+	"Model" => "Модель",
+	"This endpoint has been loaded from a file" => "Цей телефон був завантажений із файлу",
+	"Changes to this endpoint have not yet been applied" => "Зміни цього телефону ще не застосовані",
+	"This endpoint has at least one account assigned" => "Цей кінцевий пристрій має принаймні один обліковий запис",
+	"This endpoint was previously detected but is missing from the latest scan" => "Це кінцеве обладнання було раніше виявлений але відсутній при останньому скануванні",
+	"(unknown)" => "(невідомо)",
+	"No endpoints have been discovered or loaded." => "Жодне кінцеве обладнання не було виявлено чи завантажено.",
+	"Cannot scan while scanning/configuration is in progress." => "Не можна сканувати під час 'Сканування/Конфігурації'.",
+	"Cannot configure while scanning/configuration is in progress." => "Неможливо виконати налаштування під час 'Сканування/Налаштування'.",
+	"Invalid endpoint scan mask." => "Неправильна маска сканування кінцевого обладнання.",
+	"Please confirm in order to remove tracking of selected endpoints. All configuration files for selections will be removed but no accounts will be removed from the phone or this system." => "Будь ласка, підтвердіть видалення відстеження обраних кінцевих пристроїв. Усі файли конфігурації для вибору будуть видалені, але жодні облікові записи не будуть видалені з кінцевих пристроїв або системи.",
+	"Endpoint configuration for" => "Конфігурація кінцевого пристрою для",
+	"Unimplemented method" => "Нереалізований метод",
+	"There is a network scan in progress" => "Виконується сканування мережі",
+	"There is an endpoint configuration in progress" => "Виконується налаштування кінцевого обладнання",
+	"Invalid Format in Parameter" => "Недійсний Формат у Параметрі",
+	"There is no network scan in progress." => "Сканування мережі не здійснено.",
+	"Invalid endpoint ID" => "Недійсний ID Кінцевого Обладнання",
+	"Invalid model ID" => "Недійсний ID Моделі",
+	"Invalid or empty selection" => "Недійсний або порожній вибір",
+	"Invalid endpoint file format" => "Недійсний формат файлу кінцевого обладнання",
+	"No file uploaded" => "Файл не завантажено",
+	"Failed to upload file" => "Не вдалося завантажити файл",
+	"Failed to detect endpoint file format" => "Не вдалося визначити формат файлу кінцевого обладнання",
+	"Failed to parse file" => "Не вдалося проаналізувати файл",
+	"Failed to save endpoints" => "Не вдалося зберегти кінцеві пристрої",
+	"Failed to open file" => "Не вдалося відкрити файл",
+	"Line" => "Лінія",
+	"missing required field" => "відсутнє обов'язкове поле",
+	"property without endpoint" => "властивість без кінцевого обладнання",
+	"account without endpoint" => "цей акаунт не має прив'язаного пристрою",
+	"account property without endpoint" => "властивість цього облікового запису не має кінцевого пристрою",
+	"account property without account" => "властивість цього облікового запису не має облікового запису",
+	"invalid indentation" => "неприпустимий відступ",
+	"Failed to read header" => "Не вдалося прочитати заголовок",
+	"Invalid header - the following columns are required" => "Недійсний заголовок – наступні стовпці є обов’язковими",
+	"(not detected)" => "(не виявлено)",
+	"Empty selection" => "Порожній вибір",
+	"Manufacturer not specified for endpoint" => "Виробник не вказаний для кінцевого пристрою",
+	"Source" => "Джерело",
+	"Model not specified for endpoint" => "Модель не вказана для кінцевого пристрою",
+	"The following manufacturer/model combination is unsupported" => "Наступна комбінація виробник/модель не підтримується",
+	"Invalid MAC" => "Недійсний MAC",
+	"Duplicate MAC" => "Дублікат MAC",
+	"Manufacturer switching is not supported" => "Зміна виробника не підтримується",
+	"Could not find account for endpoint" => "Не вдалося знайти обліковий запис для кінцевого обладнання",
+	"Account tech mismatch for endpoint" => "Не вдалося знайти обліковий запис для кінцевого пристрою",
+	"Failed to save endpoint details" => "Не вдалося зберегти інформацію про телефон.",
+	"Warning" => "Попередження",
+	"Error" => "Помилка",
+	"Fatal error" => "Критична помилка",
+	"Column" => "Колонка",
+	"Incorrect XML document type" => "Неправильний тип документа XML",
+	"Unrecognized element instead of endpoint" => "Нерозпізнаний елемент замість кінцевого обладнання",
+	"Missing required element in endpoint" => "Відсутній необхідний елемент у кінцевого обладнання",
+	"Endpoint" => "Кінцеве Обладнання",
+	"Unrecognized element instead of property" => "Нерозпізнаний елемент замість властивості",
+	"Unrecognized element instead of account" => "Нерозпізнаний елемент замість облікового запису",
+	"Missing required element in account" => "В обліковому записі відсутній обов’язковий елемент",
+	"Log of last configuration" => "Журнал останньої конфігурації",
+	"Apply" => "Застосувати",
+	"Dismiss" => "Відхилити",
+	"All endpoints were successfully configured" => "Усі кінцеві обладнання були успішно налаштовані",
+	"Endpoint configuration completed with %d warnings and %d errors. Please examine the log for details." => "Конфігурація кінцевого обладнання завершена з %d попередженнями та %d помилками. Перегляньте подробиці журналу.",
+);
+?>
