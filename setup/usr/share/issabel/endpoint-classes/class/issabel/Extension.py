@@ -89,8 +89,8 @@ class Extension:
                 setattr(self, 'server_port', row[0])
         sth.execute(
             'SELECT property_key, property_value ' +
-            'FROM endpoint_account_properties, endpoint_account ' +
-            'WHERE endpoint_account_properties.id_endpoint_account = endpoint_account.id ' +
+            'FROM endpoint_properties, endpoint_account ' +
+            'WHERE endpoint_properties.id_endpoint = endpoint_account.id_endpoint ' +
                 'AND endpoint_account.account = %s',
             (exten,))
         for row in sth.fetchall():
