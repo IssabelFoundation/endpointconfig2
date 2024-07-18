@@ -29,6 +29,7 @@ import logging
 import re
 import urllib3
 from eventlet.green import socket, urllib, os
+from urllib3.exceptions import HTTPError, MaxRetryError, NewConnectionError
 import http.client
 from eventlet.green.urllib.parse import urlencode
 import issabel.BaseEndpoint
@@ -71,10 +72,11 @@ class Endpoint(BaseEndpoint):
         unsecured by default.
         '''
         sModel = None
+        http = urllib3.PoolManager()
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/')
-            htmlbody = response.read()
-            if response.code == 200:
+            response = http.request('GET', 'http://' + self._ip + '/')
+            htmlbody = response.data.decode('utf-8')
+            if response.status == 200:
                 # <TITLE>snom 320</TITLE>
                 m = re.search(r'<TITLE>snom (\w+)</TITLE>', htmlbody, re.IGNORECASE)
                 if m != None: sModel = m.group(1)
@@ -96,7 +98,7 @@ class Endpoint(BaseEndpoint):
         vars = {'server_ip' : Endpoint._global_serverip}
         
         #for sConfigFile in ('snom300.htm', 'snom320.htm', 'snom360.htm', 'snom821.htm'):
-        for sModel in ('300', '320', '360', '710', '720', '760', '821', '870'):
+        for sModel in ('300', '320', '360', '710', '720', '760', '821', '870', 'D315'):
             try:
                 #sConfigPath = issabel.BaseEndpoint.TFTP_DIR + '/' + sConfigFile
                 sConfigPath = '%s/snom%s.htm' % (issabel.BaseEndpoint.TFTP_DIR, sModel)
@@ -228,10 +230,9 @@ class Endpoint(BaseEndpoint):
                 'link'      : 'index.htm',
                 'submit'    : 'Login'
             }
-            response = urllib3.urlopen(
-                'http://' + self._ip + '/index.htm',
-                urlencode(postvars))
-            htmlbody = response.read()
+            http = urllib3.PoolManager()
+            response = http.request('GET', 'http://' + self._ip + '/index.htm')
+            htmlbody = response.data.decode('utf-8')
             if not 'Set-Cookie' in response.headers:
                 logging.error('Endpoint %s@%s invalid username or password' %
                         (self._vendorname, self._ip))
@@ -244,13 +245,17 @@ class Endpoint(BaseEndpoint):
             if m != None:
                 logging.warning('Endpoint %s@%s accepting EULA...' % (self._vendorname, self._ip))
                 postvars = {'eula' : m.group(1), 'save' : 'Submit'}
-                response = urllib3.urlopen(urllib3.Request(
+                encoded_postvars = urlencode(postvars).encode('utf-8')
+                http = urllib3.PoolManager()
+                response = http.request(
+                    'POST',
                     'http://' + self._ip + '/index.htm',
-                    urlencode(postvars),
-                    {'Cookie' : self._cookie_v2}))
-                htmlbody = response.read()
+                    body=encoded_postvars,
+                    headers={'Cookie': self._cookie_v2, 'Content-Type': 'application/x-www-form-urlencoded'}
+                )
+                htmlbody = response.data.decode('utf-8')
             return True
-        except urllib3.URLError as e:
+        except HTTPError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -262,10 +267,17 @@ class Endpoint(BaseEndpoint):
     def _setProvisionServer_V1(self):
         try:
             postvars = {'setting_server': 'tftp://' + self._serverip, 'Settings' : 'Save' }
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_update.htm', urlencode(postvars))
-            htmlbody = response.read()
+            encoded_postvars = urlencode(postvars).encode('utf-8')
+            http = urllib3.PoolManager()
+            response = http.request(
+                'POST',
+                'http://' + self._ip + '/advanced_update.htm',
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                body=encoded_postvars
+            )
+            htmlbody = response.data.decode('utf-8')
             return True
-        except urllib3.URLError as e:
+        except HTTPError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -340,17 +352,20 @@ class Endpoint(BaseEndpoint):
                     'dns_server1'   :   self._static_dns1,  
                     'dns_server2'   :   self._static_dns2,  
                 })
-            response = urllib3.urlopen(urllib3.Request(
+                encoded_postvars = urlencode(postvars).encode('utf-8')
+            response = http.request(
+                'POST',
                 'http://' + self._ip + '/network.htm',
-                urlencode(postvars),
-                {'Cookie' : self._cookie_v2}))
-            htmlbody = response.read()
+                body=encoded_postvars,
+                headers={'Cookie': self._cookie_v2, 'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            htmlbody = response.data.decode('utf-8')
             if not 'Please reboot the device' in htmlbody:
                 logging.error('Endpoint %s@%s failed to save provisioning or network settings' %
                         (self._vendorname, self._ip))
                 return False
             return True
-        except urllib3.URLError as e:
+        except HTTPError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -360,6 +375,7 @@ class Endpoint(BaseEndpoint):
         return False
 
     def _setNetworkConfig_V1(self):
+        http = urllib3.PoolManager()
         try:
             if self._dhcp:
                 postvars = {
@@ -378,13 +394,30 @@ class Endpoint(BaseEndpoint):
                     'Settings'      :   'Save',
                     'ignore_dhcp_findings' : 'dns_server1 dns_server2 gateway ip_adr netmask',
                 }
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', urlencode(postvars))
-            htmlbody = response.read()
+            encoded_postvars = urlencode(postvars).encode('utf-8')
+            response = http.request(
+                'POST',
+                'http://' + self._ip + '/advanced_network.htm',
+                body=encoded_postvars,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            htmlbody = response.data.decode('utf-8')
             if 'CONFIRM_REBOOT' in htmlbody:
-                response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', 'CONFIRM_REBOOT=Reboot')
-                htmlbody = response.read()
-                response = urllib3.urlopen('http://' + self._ip + '/confirm.htm', 'REBOOT=Yes')
-                htmlbody = response.read()
+                encoded_postvars = urlencode({"CONFIRM_REBOOT": "Reboot"}).encode('utf-8')
+                response = http.request(
+                    'POST',
+                    'http://' + self._ip + '/advanced_network.htm',
+                    body=encoded_postvars,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                )
+                encoded_postvars = urlencode({"REBOOT": "Yes"}).encode('utf-8')
+                response = http.request(
+                    'POST',
+                    'http://' + self._ip + '/confirm.htm',
+                    body=encoded_postvars,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                )
+                self._rebootbyhttp_V1()
                 logging.info('Endpoint %s@%s set network config - rebooting' %
                     (self._vendorname, self._ip))
                 return (True, True)
@@ -392,28 +425,27 @@ class Endpoint(BaseEndpoint):
                 logging.info('Endpoint %s@%s set network config - not yet rebooting' %
                     (self._vendorname, self._ip))
                 return (True, False)
-        except urllib3.URLError as e:
+        except HTTPError as e:
+            # Apparently a successful CONFIRM_REBOOT will start provisioning immediately
+            return (True, True)
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return (False, False)
         except socket.error as e:
             logging.error('Endpoint %s@%s failed to reboot phone - %s' %
                 (self._vendorname, self._ip, str(e)))
-        except http.client.BadStatusLine as e:
-            # Apparently a successful CONFIRM_REBOOT will start provisioning immediately
-            return (True, True)
         return (False, False)
 
     def _rebootbyhttp_V1(self):
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_update.htm?reboot=Reboot')
-            htmlbody = response.read()
-            if response.code == 302:
+            http = urllib3.PoolManager()
+            response = http.request('GET', 'http://' + self._ip + '/advanced_update.htm?reboot=Reboot')
+            if response.status == 200:
                 return True
             else:
                 logging.error('Endpoint %s@%s failed to reboot phone - got error code %d' %
-                    (self._vendorname, self._ip, response.code))
-        except urllib3.URLError as e:
+                    (self._vendorname, self._ip, response.status))
+        except HTTPError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -427,17 +459,20 @@ class Endpoint(BaseEndpoint):
 
     def _rebootbyhttp_V2(self):
         try:
-            response = urllib3.urlopen(urllib3.Request(
+            http = urllib3.PoolManager()
+            encoded_postvars = urlencode({'reboot' : 'Reboot'}).encode('utf-8')
+            response = http.request(
+                'POST',
                 'http://' + self._ip + '/update.htm',
-                urlencode({'reboot' : 'Reboot'}),
-                {'Cookie' : self._cookie_v2}))
-            htmlbody = response.read()
-            if response.code == 200:
+                body=encoded_postvars,
+                headers={'Cookie': self._cookie_v2, 'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            if response.status == 200:
                 return True
             else:
                 logging.error('Endpoint %s@%s failed to reboot phone - got error code %d' %
-                    (self._vendorname, self._ip, response.code))
-        except urllib3.URLError as e:
+                    (self._vendorname, self._ip, response.status))
+        except HTTPError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
