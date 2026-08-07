@@ -1,45 +1,24 @@
 %define modname endpointconfig2
 
-%if 0%{?rhel} == 7
- %define dist .el7
-%endif
-
-#%undefine __brp_mangle_shebangs
-
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 5.0.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
-Patch0: centos8-endpointconfig.diff
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildArch: noarch
 Requires: issabel-framework >= 5.0.0-1
 Requires: issabel-agenda >= 4.0.0-1
-Requires: python-cjson
+Requires: epel-release
 Requires: php-simplepie
 Requires: nmap
 Requires: tftp-server
-
-%if 0%{?rhel} == 7
-Requires: pyst2-Asterisk
-Requires: MySQL-python
-Requires: python-paramiko >= 1.7.6-2
-Requires: python-tempita
-Requires: python-eventlet
-Requires: python-daemon
-Requires: pyOpenSSL
-%else
-Requires: py-Asterisk
 Requires: python3-mysqlclient
 Requires: python3-paramiko
 Requires: python3-tempita
-Requires: python3-eventlet
 Requires: python3-daemon
-Requires: python3-pyOpenSSL
-%endif
 
 Conflicts: elastix-pbx <= 2.4.0-15
 
@@ -79,10 +58,6 @@ For developers:
 
 %prep
 %setup -n %{name}-%{version}
-
-%if 0%{?rhel} == 8
-%patch0 -p0
-%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT

@@ -28,13 +28,13 @@
 import logging
 import hashlib
 import re
-import requests
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-from eventlet.green import socket, urllib
+import socket
+import urllib.parse
 import http.client
-from eventlet.green.urllib.parse import urlencode
-telnetlib = eventlet.import_patched('telnetlib')
+from urllib.parse import urlencode
+from issabel.telnetclient import Telnet
+import http.cookiejar
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -59,7 +59,7 @@ class Endpoint(BaseEndpoint):
         '''
         telnet = None
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
         except socket.timeout as e:
@@ -152,7 +152,7 @@ class Endpoint(BaseEndpoint):
 
     def _updateLocalConfig_AT320(self):
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -299,7 +299,7 @@ class Endpoint(BaseEndpoint):
     def _transferConfig2Phone(self, sConfigFile):
         '''Transfer configuration file to Atcom phone (AT530 or later) '''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -390,10 +390,10 @@ class Endpoint(BaseEndpoint):
             myhttp.request('GET', noncesource, None, {'Connection' : 'keep-alive'})
             resp = myhttp.getresponse()
             htmlbody = resp.read().decode('utf-8')
-            session = requests.Session()
-            mcookie = session.cookies.get_dict()
-            response = session.get('http://' + self._ip)
-            mcookie = session.cookies.get_dict()
+            cookiejar = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
+            response = opener.open('http://' + self._ip)
+            mcookie = dict((c.name, c.value) for c in cookiejar)
             if not resp.status in (200, 404):
                 logging.error('Endpoint %s@%s failed to fetch nonce for HTTP configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))

@@ -30,7 +30,7 @@ import re
 import time
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Atcom
-from eventlet.green import socket
+import socket
 
 class Endpoint(issabel.vendor.Atcom.Endpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):

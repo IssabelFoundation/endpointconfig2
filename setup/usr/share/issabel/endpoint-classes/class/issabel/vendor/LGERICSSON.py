@@ -27,10 +27,9 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
-import eventlet
-from eventlet.green import socket
+import socket
 from issabel.BaseEndpoint import BaseEndpoint
-telnetlib = eventlet.import_patched('telnetlib')
+from issabel.telnetclient import Telnet
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -49,7 +48,7 @@ class Endpoint(BaseEndpoint):
         login banner exposes the phone model.
         '''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip, 6000)
             telnet.get_socket().settimeout(5)
         except socket.timeout as e:
@@ -123,7 +122,7 @@ class Endpoint(BaseEndpoint):
     def _rebootbytelnet(self):
         '''Start reboot of LG-Ericsson phone by telnet'''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip, 6000)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:

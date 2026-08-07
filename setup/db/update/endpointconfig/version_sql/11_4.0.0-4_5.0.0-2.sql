@@ -1,0 +1,52 @@
+/* Agregar prefijos MAC faltantes de fabricantes soportados, según el archivo
+ * manuf de Wireshark (https://www.wireshark.org/download/automated/data/manuf).
+ * No se agregan los prefijos de Cisco porque la base de datos mantiene una
+ * lista curada de OUIs de teléfonos (79xx/88xx) y agregar las 1244 OUIs del
+ * manuf haría que switches/routers se detecten como endpoints de teléfono.
+ */
+
+INSERT INTO `mac_prefix` (`mac_prefix`, `description`, `id_manufacturer`) VALUES
+("00:10:BC", "Aastra", (SELECT `id` FROM manufacturer WHERE `name` = "Aastra")),
+("80:82:87", "Atcom", (SELECT `id` FROM manufacturer WHERE `name` = "Atcom")),
+("00:17:19", "AudioCodes", (SELECT `id` FROM manufacturer WHERE `name` = "AudioCodes")),
+("00:05:E7", "AudioCodes", (SELECT `id` FROM manufacturer WHERE `name` = "AudioCodes")),
+("14:4C:FF", "Grandstream", (SELECT `id` FROM manufacturer WHERE `name` = "Grandstream")),
+("C0:74:AD", "Grandstream", (SELECT `id` FROM manufacturer WHERE `name` = "Grandstream")),
+("EC:74:D7", "Grandstream", (SELECT `id` FROM manufacturer WHERE `name` = "Grandstream")),
+("00:0C:41", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:0F:66", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:12:17", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:13:10", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:14:BF", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:16:B6", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:18:39", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:18:F8", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:1A:70", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:1C:10", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:1D:7E", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:1E:E5", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:21:29", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:22:6B", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:23:69", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("00:25:9C", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("20:AA:4B", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("48:F8:B3", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("58:6D:8F", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("68:7F:74", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("74:12:13", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("98:FC:11", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("C0:C1:C0", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("C8:B3:73", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("C8:D7:19", "Linksys/Sipura", (SELECT `id` FROM manufacturer WHERE `name` = "Linksys")),
+("64:16:7F", "Polycom", (SELECT `id` FROM manufacturer WHERE `name` = "Polycom")),
+("1C:71:26", "Snom", (SELECT `id` FROM manufacturer WHERE `name` = "Snom")),
+("24:9A:D8", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("34:97:D7", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("44:DB:D2", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("64:4F:56", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("80:5E:0C", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("80:5E:C0", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("B0:61:A9", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("C4:FC:22", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("EC:1D:A9", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink")),
+("F0:16:53", "Yealink", (SELECT `id` FROM manufacturer WHERE `name` = "Yealink"));

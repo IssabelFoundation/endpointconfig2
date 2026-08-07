@@ -27,10 +27,12 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
-import urllib3
-from eventlet.green import socket, urllib, os
+import urllib.request
+import urllib.error
+import socket
+import os
 import http.client
-from eventlet.green.urllib.parse import urlencode
+from urllib.parse import urlencode
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
 
@@ -72,7 +74,7 @@ class Endpoint(BaseEndpoint):
         '''
         sModel = None
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/')
+            response = urllib.request.urlopen('http://' + self._ip + '/')
             htmlbody = response.read()
             if response.code == 200:
                 # <TITLE>snom 320</TITLE>
@@ -228,7 +230,7 @@ class Endpoint(BaseEndpoint):
                 'link'      : 'index.htm',
                 'submit'    : 'Login'
             }
-            response = urllib3.urlopen(
+            response = urllib.request.urlopen(
                 'http://' + self._ip + '/index.htm',
                 urlencode(postvars))
             htmlbody = response.read()
@@ -244,13 +246,13 @@ class Endpoint(BaseEndpoint):
             if m != None:
                 logging.warning('Endpoint %s@%s accepting EULA...' % (self._vendorname, self._ip))
                 postvars = {'eula' : m.group(1), 'save' : 'Submit'}
-                response = urllib3.urlopen(urllib3.Request(
+                response = urllib.request.urlopen(urllib.request.Request(
                     'http://' + self._ip + '/index.htm',
                     urlencode(postvars),
                     {'Cookie' : self._cookie_v2}))
                 htmlbody = response.read()
             return True
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -262,10 +264,10 @@ class Endpoint(BaseEndpoint):
     def _setProvisionServer_V1(self):
         try:
             postvars = {'setting_server': 'tftp://' + self._serverip, 'Settings' : 'Save' }
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_update.htm', urlencode(postvars))
+            response = urllib.request.urlopen('http://' + self._ip + '/advanced_update.htm', urlencode(postvars))
             htmlbody = response.read()
             return True
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -340,7 +342,7 @@ class Endpoint(BaseEndpoint):
                     'dns_server1'   :   self._static_dns1,  
                     'dns_server2'   :   self._static_dns2,  
                 })
-            response = urllib3.urlopen(urllib3.Request(
+            response = urllib.request.urlopen(urllib.request.Request(
                 'http://' + self._ip + '/network.htm',
                 urlencode(postvars),
                 {'Cookie' : self._cookie_v2}))
@@ -350,7 +352,7 @@ class Endpoint(BaseEndpoint):
                         (self._vendorname, self._ip))
                 return False
             return True
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -378,12 +380,12 @@ class Endpoint(BaseEndpoint):
                     'Settings'      :   'Save',
                     'ignore_dhcp_findings' : 'dns_server1 dns_server2 gateway ip_adr netmask',
                 }
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', urlencode(postvars))
+            response = urllib.request.urlopen('http://' + self._ip + '/advanced_network.htm', urlencode(postvars))
             htmlbody = response.read()
             if 'CONFIRM_REBOOT' in htmlbody:
-                response = urllib3.urlopen('http://' + self._ip + '/advanced_network.htm', 'CONFIRM_REBOOT=Reboot')
+                response = urllib.request.urlopen('http://' + self._ip + '/advanced_network.htm', 'CONFIRM_REBOOT=Reboot')
                 htmlbody = response.read()
-                response = urllib3.urlopen('http://' + self._ip + '/confirm.htm', 'REBOOT=Yes')
+                response = urllib.request.urlopen('http://' + self._ip + '/confirm.htm', 'REBOOT=Yes')
                 htmlbody = response.read()
                 logging.info('Endpoint %s@%s set network config - rebooting' %
                     (self._vendorname, self._ip))
@@ -392,7 +394,7 @@ class Endpoint(BaseEndpoint):
                 logging.info('Endpoint %s@%s set network config - not yet rebooting' %
                     (self._vendorname, self._ip))
                 return (True, False)
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return (False, False)
@@ -406,14 +408,14 @@ class Endpoint(BaseEndpoint):
 
     def _rebootbyhttp_V1(self):
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/advanced_update.htm?reboot=Reboot')
+            response = urllib.request.urlopen('http://' + self._ip + '/advanced_update.htm?reboot=Reboot')
             htmlbody = response.read()
             if response.code == 302:
                 return True
             else:
                 logging.error('Endpoint %s@%s failed to reboot phone - got error code %d' %
                     (self._vendorname, self._ip, response.code))
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
@@ -427,7 +429,7 @@ class Endpoint(BaseEndpoint):
 
     def _rebootbyhttp_V2(self):
         try:
-            response = urllib3.urlopen(urllib3.Request(
+            response = urllib.request.urlopen(urllib.request.Request(
                 'http://' + self._ip + '/update.htm',
                 urlencode({'reboot' : 'Reboot'}),
                 {'Cookie' : self._cookie_v2}))
@@ -437,7 +439,7 @@ class Endpoint(BaseEndpoint):
             else:
                 logging.error('Endpoint %s@%s failed to reboot phone - got error code %d' %
                     (self._vendorname, self._ip, response.code))
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False

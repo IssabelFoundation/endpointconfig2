@@ -27,13 +27,13 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-import urllib3
-from eventlet.green import socket, os
+import urllib.request
+import socket
+import os
 import errno
 import re
 from xml.dom.minidom import parse
-telnetlib = eventlet.import_patched('telnetlib')
+from issabel.telnetclient import Telnet
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -55,7 +55,7 @@ class Endpoint(BaseEndpoint):
         specific phone model is at /mnt/system/PhoneType
         '''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -98,11 +98,11 @@ class Endpoint(BaseEndpoint):
         if sModel == None:
             http_username = 'root'
             http_password = 'root'
-            password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
+            password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(None, 'http://' + self._ip + '/',
                 http_username, http_password)
-            basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
-            opener = urllib3.build_opener(basic_auth_handler)
+            basic_auth_handler = urllib.request.HTTPBasicAuthHandler(password_manager)
+            opener = urllib.request.build_opener(basic_auth_handler)
             try:
                 response = opener.open('http://' + self._ip + '/overview.asp')
                 htmlbody = response.read()
@@ -153,7 +153,7 @@ class Endpoint(BaseEndpoint):
             return False
 
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
         except socket.timeout as e:

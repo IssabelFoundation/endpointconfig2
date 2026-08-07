@@ -28,14 +28,15 @@
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Escene
-import urllib3
-import eventlet
-from eventlet.green import socket, urllib, os
-from eventlet.green.urllib.parse import urlencode
+import urllib.request
+import urllib.error
+import socket
+import urllib.parse
+from urllib.parse import urlencode
 import errno
 import re
 import xml.dom.minidom
-paramiko = eventlet.import_patched('paramiko')
+import paramiko
 
 class Endpoint(issabel.vendor.Escene.Endpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -51,13 +52,13 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
         '''
         sModel = None
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/console/start')
+            response = urllib.request.urlopen('http://' + self._ip + '/console/start')
             htmlbody = response.read()
             if response.code == 200:
                 # RCA IP150 (Glass.GB.2.0/4085) Settings
                 m = re.search(r'RCA (\w+)', htmlbody)
                 if m != None: sModel = m.group(1)
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="RCA (\w+)"', e.headers['WWW-Authenticate'])
                 if m != None:
@@ -173,7 +174,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
     def _sendPhoneConfiguration(self, xmlcontent):
         try:
             # Login into interface
-            opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
             response = opener.open('http://' + self._ip + '/console/j_security_check',
                 urlencode({
                     'submit' : 'Login',
@@ -198,7 +199,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
                 '\r\n' +\
                 xmlcontent + '\r\n' +\
                 '--' + boundary + '--\r\n'
-            filerequest = urllib3.Request(
+            filerequest = urllib.request.Request(
                 'http://' + self._ip + '/console/configuration',
                 postdata, {'Content-Type': 'multipart/form-data; boundary=' + boundary})
             # The phone configuration restore is known to hang for 25-30 seconds 
@@ -254,7 +255,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
             logging.error('Endpoint %s@%s failed to authenticate ssh - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -404,5 +405,5 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
         '''
         postdata = []
         for tuple in postvars:
-            postdata.append(urllib.quote_plus(tuple[0]) + '=' + urllib.quote_plus(str(tuple[1])))
+            postdata.append(urllib.parse.quote_plus(tuple[0]) + '=' + urllib.parse.quote_plus(str(tuple[1])))
         return self._doAuthPost(urlpath, '&'.join(postdata))

@@ -28,18 +28,20 @@
 import logging
 import re
 import struct
-import eventlet
-import urllib3
-from eventlet.green import socket, urllib, os
-from eventlet.green.urllib.parse import urlencode
+import urllib.request
+import urllib.error
+import socket
+import urllib.parse
+from urllib.parse import urlencode
 import errno
 import json
 from issabel.BaseEndpoint import BaseEndpoint
-telnetlib = eventlet.import_patched('telnetlib')
+from issabel.telnetclient import Telnet
 import http.cookiejar
 import time
 import http.client
-paramiko = eventlet.import_patched('paramiko')
+import paramiko
+import ssl
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -66,7 +68,7 @@ class Endpoint(BaseEndpoint):
         '''
         bTelnetFailed = False
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
         except socket.timeout as e:
@@ -256,10 +258,10 @@ class Endpoint(BaseEndpoint):
         try:
             # Login into interface
             cookiejar = http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(rfc2965=True))
-            opener = urllib3.PoolManager(cert_reqs='CERT_NONE', ca_certs=False)
-            response = opener.request('POST', 'http://' + self._ip + '/dologin.htm',
-                fields={'Login': 'Login', 'P2': self._http_password, 'gnkey': '0b82'})
-            body = response.data
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
+            response = opener.open('http://' + self._ip + '/dologin.htm',
+                urlencode({'Login': 'Login', 'P2': self._http_password, 'gnkey': '0b82'}))
+            body = response.read()
             if b'dologin.htm' in body:
                 logging.error('Endpoint %s@%s BT200 - dologin failed login' %
                     (self._vendorname, self._ip))
@@ -269,16 +271,16 @@ class Endpoint(BaseEndpoint):
             for cookie in cookiejar:
                 cookie.version = 0
     
-            response = opener.request('POST', 'http://' + self._ip + '/update.htm',
-                fields={**vars, 'gnkey': '0b82'})
-            body = response.data
+            response = opener.open('http://' + self._ip + '/update.htm',
+                urlencode({**vars, 'gnkey': '0b82'}))
+            body = response.read()
             if b'dologin.htm' in body:
                 logging.error('Endpoint %s@%s BT200 - dologin failed to keep session' %
                     (self._vendorname, self._ip))
                 return False
     
             return True
-        except urllib3.exceptions.HTTPError as e:
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s BT200 failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -290,8 +292,8 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_BT200_old(self, vars):
         try:
             # Login into interface
-            cookiejar = cookielib.CookieJar(cookielib.DefaultCookiePolicy(rfc2965=True))
-            opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
+            cookiejar = http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy(rfc2965=True))
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
             response = opener.open('http://' + self._ip + '/dologin.htm',
                 urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
             body = response.read()
@@ -313,7 +315,7 @@ class Endpoint(BaseEndpoint):
                 return False
 
             return True
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s BT200 failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -384,17 +386,17 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXV(self, vars):
         try:
             # Login into interface
-            http = urllib3.PoolManager()
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36'
             }
-            response = http.request('GET', 'http://' + self._ip + '/manager?' + urlencode({
+            req = urllib.request.Request('http://' + self._ip + '/manager?' + urlencode({
                 'action': 'login',
                 'Username': self._http_username,
                 'Secret': self._http_password,
                 'time': int(time.time())
             }), headers=headers)
-            body = response.data
+            response = urllib.request.urlopen(req)
+            body = response.read()
             if b'Error' in body:
                 logging.error('Endpoint %s@%s GXV - dologin failed login' %
                               (self._vendorname, self._ip))
@@ -421,8 +423,10 @@ class Endpoint(BaseEndpoint):
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
 
-            response = http.request('POST', 'http://' + self._ip + '/manager', fields=submitvars, headers=headers)
-            body = response.data
+            postdata = urlencode(submitvars).encode('utf-8')
+            req = urllib.request.Request('http://' + self._ip + '/manager', postdata, headers=headers)
+            response = urllib.request.urlopen(req)
+            body = response.read()
             if not b'Success' in body:
                 logging.error('Endpoint %s@%s GXV - dologin failed to keep session' %
                               (self._vendorname, self._ip))
@@ -440,8 +444,10 @@ class Endpoint(BaseEndpoint):
                 'rm-redup': 1
             }
 
-            response = http.request('POST', 'http://' + self._ip + '/manager', fields=submitvars, headers=headers)
-            body = response.data
+            postdata = urlencode(submitvars).encode('utf-8')
+            req = urllib.request.Request('http://' + self._ip + '/manager', postdata, headers=headers)
+            response = urllib.request.urlopen(req)
+            body = response.read()
             if not b'Success' in body:
                 logging.error('Endpoint %s@%s GXV - could not reprogram phonebook' %
                               (self._vendorname, self._ip))
@@ -451,7 +457,7 @@ class Endpoint(BaseEndpoint):
             logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
                          (self._vendorname, self._ip, str(e)))
             return True
-        except urllib3.exceptions.HTTPError as e:
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s GXV failed to send vars to interface - %s' %
                           (self._vendorname, self._ip, str(e)))
             return False
@@ -463,7 +469,7 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXV_old(self, vars):
         try:
             # Login into interface
-            opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
             headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36',
             }
@@ -526,7 +532,7 @@ class Endpoint(BaseEndpoint):
             logging.info('Endpoint %s@%s GXV failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return True
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s GXV failed to send vars to interface - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -538,18 +544,19 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXP1450(self, vars):
         try:
             # Login into interface
-            http = urllib3.PoolManager()
-            response = http.request('POST', 'http://' + self._ip + '/cgi-bin/dologin',
-                fields={'Login': 'Login', 'P2': self._http_password, 'gnkey': '0b82'})
-            body = response.data
+            cookiejar = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
+            response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
+                urlencode({'Login': 'Login', 'P2': self._http_password, 'gnkey': '0b82'}))
+            body = response.read()
             if b'dologin' in body:
                 logging.error('Endpoint %s@%s GXP1450 - dologin failed login' %
                     (self._vendorname, self._ip))
                 return False
     
-            response = http.request('POST', 'http://' + self._ip + '/cgi-bin/update',
-                fields={**vars, 'gnkey': '0b82'})
-            body = response.data
+            response = opener.open('http://' + self._ip + '/cgi-bin/update',
+                urlencode({**vars, 'gnkey': '0b82'}))
+            body = response.read()
             if b'dologin' in body:
                 logging.error('Endpoint %s@%s GXP1450 - dologin failed to keep session' %
                     (self._vendorname, self._ip))
@@ -564,7 +571,7 @@ class Endpoint(BaseEndpoint):
     def _enableStaticProvisioning_GXP1450_old(self, vars):
         try:
             # Login into interface
-            opener = urllib3.build_opener(urllib3.HTTPCookieProcessor())
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
             response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
                 urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
             body = response.read()
@@ -591,7 +598,7 @@ class Endpoint(BaseEndpoint):
     def _rebootbytelnet(self):
         '''Start reboot of Grandstream phone by telnet'''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -680,7 +687,7 @@ class Endpoint(BaseEndpoint):
             logging.warning('Endpoint %s@%s failed to authenticate ssh - %s (%s:%s)' %
                 (self._vendorname, self._ip, str(e), self._ssh_username, self._ssh_password))
             return False
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

@@ -31,8 +31,8 @@ import os.path
 import re
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-telnetlib = eventlet.import_patched('telnetlib')
+import urllib.request
+from issabel.telnetclient import Telnet
 
 
 class Endpoint(BaseEndpoint):
@@ -80,7 +80,7 @@ class Endpoint(BaseEndpoint):
         '''Probe specific model of the Cisco phone using telnet'''
         sModel = None
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         
@@ -113,7 +113,7 @@ class Endpoint(BaseEndpoint):
         '''Probe specific model of the Cisco phone from its web page'''
         sModel = None
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/')
+            response = urllib.request.urlopen('http://' + self._ip + '/')
             htmlbody = response.read()
 
             # Search for the text that contains the Cisco phone model
@@ -228,7 +228,7 @@ class Endpoint(BaseEndpoint):
     def _rebootbytelnet(self):
         '''Start reboot of Cisco phone by telnet'''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:

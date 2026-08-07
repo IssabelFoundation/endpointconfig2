@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # vim: set fileencoding=utf-8 :
 # vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
 # Codificación: UTF-8
@@ -7,11 +7,6 @@
 # | http://www.issabel.org                                               |
 # +----------------------------------------------------------------------+
 # | Copyright (c) 2006 Palosanto Solutions S. A.                         |
-# +----------------------------------------------------------------------+
-# | Cdla. Nueva Kennedy Calle E 222 y 9na. Este                          |
-# | Telfs. 2283-268, 2294-440, 2284-356                                  |
-# | Guayaquil - Ecuador                                                  |
-# | http://www.palosanto.com                                             |
 # +----------------------------------------------------------------------+
 # | The contents of this file are subject to the General Public License  |
 # | (GPL) Version 2 (the "License"); you may not use this file except in |
@@ -28,7 +23,7 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 
 '''
-This privileged script implements a cancellable probe on the network for 
+This privileged script implements a cancellable probe on the network for
 configurable endpoints. Currently there are two known methods for probing the
 network for endpoints. The first one is to run nmap with a local IPv4 network
 mask, and filter the reported IPs and MACs for the known MAC prefixes from the
@@ -37,7 +32,7 @@ themselves back. This method is currently known to work for Patton gateways. If
 an entry with the same MAC address exists in the database, the IP address will
 be updated. If, however, there is an entry with the same IP and a different MAC,
 it is assumed that the device has changed, and all information on it, including
-endpoint associations and properties, will be removed. In all cases an entry 
+endpoint associations and properties, will be removed. In all cases an entry
 will be inserted/updated with the current information.
 '''
 
@@ -45,415 +40,483 @@ import sys
 import re
 import struct
 import signal
-import eventlet
-from eventlet.green import socket, subprocess, select, os, time
-from eventlet.greenpool import GreenPool
-from eventlet.db_pool import ConnectionPool
-import eventlet.hubs
-import os.path
+import socket
+import select
+import os
+import time
+import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor
+import queue
 import MySQLdb
-daemon = eventlet.import_patched('daemon')
+import daemon
 
 sys.path.append('/usr/share/issabel/endpoint-classes/class')
 import issabel
+
+
+class _TaskCounter:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._count = 0
+
+    def increment(self):
+        with self._lock:
+            self._count += 1
+
+    def decrement(self):
+        with self._lock:
+            self._count -= 1
+
+    @property
+    def running(self):
+        with self._lock:
+            return self._count
+
 
 # Flag to indicate request to cancel probe
 cancelprobe = False
 clients = set()
 endpointChangeLog = set()
-gpool = GreenPool()
+gpool = None
+gpool_counter = None
 endpointClasses = {}
 
+
+class SimplePool:
+    def __init__(self, factory, max_size=1):
+        self._factory = factory
+        self._max_size = max_size
+        self._queue = queue.Queue(maxsize=max_size)
+
+    def get(self):
+        try:
+            return self._queue.get_nowait()
+        except queue.Empty:
+            return self._factory()
+
+    def put(self, item):
+        try:
+            self._queue.put_nowait(item)
+        except queue.Full:
+            pass
+
+
 def main():
-	SOCKET_PATH = '/tmp/detect_endpoints_' + str(time.time()) + '.sock'
-	daemonize = True
-	socket.setdefaulttimeout(5)
-	
-	if os.path.exists(SOCKET_PATH):
-		try:
-			os.remove(SOCKET_PATH);
-		except OSError as e:
-			sys.stderr.write('ERR: failed to remove old socket: ' + str(e) +'\n')
-			sys.exit(1)
-	
-	# Parse and validate commandline parameters
-	if len(sys.argv) < 2:
-		sys.stderr.write(sys.argv[0] + ' n.n.n.n/m\n')
-		sys.exit(1)
-	sNetMask = sys.argv[1]
-	if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$', sNetMask) == None:
-		sys.stderr.write(sys.argv[0] + ': invalid netmask\n')
-		sys.exit(1)
-	if len(sys.argv) >= 3 and sys.argv[2] == 'nodaemon':
-		daemonize = False
-	
-	# Set up database connection pool
-	dbcred = get_database_credentials()
-	if dbcred == None:
-		sys.stderr.write('ERR: failed to get database credentials\n')
-		sys.exit(1)
-	
-	print(SOCKET_PATH)
-	sys.stdout.flush()
-	
-	# Become a daemon here
-	if daemonize:
-		daemonctx = daemon.DaemonContext()
-		# Prevent daemon from closing the epoll fd behind our backs
-		ehub = eventlet.hubs.get_hub()
-		if hasattr(ehub, 'poll') and hasattr(ehub.poll, 'fileno'):
-			daemonctx.files_preserve = [ehub.poll]
-		daemonctx.stderr = open('/tmp/stderr_detect_endpoints.txt', 'w+')
-		daemonctx.open()
-	
-	server = eventlet.listen(SOCKET_PATH, socket.AF_UNIX)
-	os.chmod(SOCKET_PATH, 0o777)
-	
-	dbpool = ConnectionPool(MySQLdb,
-				host = 'localhost',
-				user = dbcred[0],
-				passwd = dbcred[1],
-				db = 'endpointconfig',
-                charset = 'utf8',
-                use_unicode = True)
-	
-	gpool.spawn_n(list_mac_ips, dbpool, sNetMask)
-	gpool.spawn_n(list_patton, dbpool)
-	
-	while gpool.running() > 0:
-		try:
-			rd, _, _ = select.select([server], [], [], 0.1)
-			if len(rd) > 0:
-				fd, address = server.accept()
-				clients.add(fd)
-				gpool.spawn_n(process_client, fd)
-		except (SystemExit, KeyboardInterrupt):
-			cancelprobe = True
-	server.close()
-	if os.path.exists(SOCKET_PATH):
-		try:
-			os.remove(SOCKET_PATH);
-		except OSError as e:
-			sys.stderr.write('ERR: failed to remove socket: ' + str(e) +'\n')
+    global gpool, gpool_counter, cancelprobe
+
+    SOCKET_PATH = '/tmp/detect_endpoints_' + str(time.time()) + '.sock'
+    daemonize = True
+    socket.setdefaulttimeout(5)
+
+    if os.path.exists(SOCKET_PATH):
+        try:
+            os.remove(SOCKET_PATH);
+        except OSError as e:
+            sys.stderr.write('ERR: failed to remove old socket: ' + str(e) +'\n')
+            sys.exit(1)
+
+    # Parse and validate commandline parameters
+    if len(sys.argv) < 2:
+        sys.stderr.write(sys.argv[0] + ' n.n.n.n/m\n')
+        sys.exit(1)
+    sNetMask = sys.argv[1]
+    if re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$', sNetMask) is None:
+        sys.stderr.write(sys.argv[0] + ': invalid netmask\n')
+        sys.exit(1)
+    if len(sys.argv) >= 3 and sys.argv[2] == 'nodaemon':
+        daemonize = False
+
+    # Set up database connection pool
+    dbcred = get_database_credentials()
+    if dbcred is None:
+        sys.stderr.write('ERR: failed to get database credentials\n')
+        sys.exit(1)
+
+    print(SOCKET_PATH)
+    sys.stdout.flush()
+
+    # Become a daemon here
+    if daemonize:
+        daemonctx = daemon.DaemonContext()
+        daemonctx.stderr = open('/tmp/stderr_detect_endpoints.txt', 'w+')
+        daemonctx.open()
+
+    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    server.bind(SOCKET_PATH)
+    server.listen(5)
+    os.chmod(SOCKET_PATH, 0o777)
+
+    dbpool = SimplePool(
+        lambda: MySQLdb.connect(
+            host='localhost',
+            user=dbcred[0],
+            passwd=dbcred[1],
+            db='endpointconfig',
+            charset='utf8',
+            use_unicode=True),
+        max_size=10)
+
+    gpool_counter = _TaskCounter()
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        gpool = executor
+        gpool_counter.increment()
+        executor.submit(_run_wrapper, list_mac_ips, dbpool, sNetMask)
+        gpool_counter.increment()
+        executor.submit(_run_wrapper, list_patton, dbpool)
+
+        while gpool_counter.running > 0:
+            try:
+                rd, _, _ = select.select([server], [], [], 0.1)
+                if len(rd) > 0:
+                    fd, address = server.accept()
+                    clients.add(fd)
+                    gpool_counter.increment()
+                    executor.submit(_run_wrapper, process_client, fd)
+            except (SystemExit, KeyboardInterrupt):
+                cancelprobe = True
+
+    server.close()
+    if os.path.exists(SOCKET_PATH):
+        try:
+            os.remove(SOCKET_PATH);
+        except OSError as e:
+            sys.stderr.write('ERR: failed to remove socket: ' + str(e) +'\n')
+
+
+def _run_wrapper(fn, *args, **kwargs):
+    try:
+        fn(*args, **kwargs)
+    finally:
+        gpool_counter.decrement()
+
 
 def get_database_credentials():
-	'''Get database credentials to connect to endpointconfig database
-	
-	This implementation attempts to parse /etc/amportal.conf for the credentials.
-	The installation process should have given the freepbx database user full
-	access to the endpointconfig database.
-	'''
-	try:
-		f = open('/etc/amportal.conf', 'r')
-		dbcred = [None, None]
-		for s in f:
-			m = re.match(r'AMPDBUSER\s*=\s*(.+)', s)
-			if m is not None:
-				dbcred[0] = m.group(1)
-			m = re.match(r'AMPDBPASS\s*=\s*(.+)', s)
-			if m is not None:
-				dbcred[1] = m.group(1)
-			if dbcred[0] is not None and dbcred[1] is not None: break
-		f.close()
-		if dbcred[0] is not None and dbcred[1] is not None:
-			return dbcred
-		else:
-			return None
-	except IOError as e:
-		sys.stderr.write('ERR: failed to read /etc/amportal.conf: ' + str(e) + '\n')
-		return None
+    '''Get database credentials to connect to endpointconfig database
+
+    This implementation attempts to parse /etc/amportal.conf for the credentials.
+    The installation process should have given the freepbx database user full
+    access to the endpointconfig database.
+    '''
+    try:
+        f = open('/etc/amportal.conf', 'r')
+        dbcred = [None, None]
+        for s in f:
+            m = re.match(r'AMPDBUSER\s*=\s*(.+)', s)
+            if m is not None:
+                dbcred[0] = m.group(1)
+            m = re.match(r'AMPDBPASS\s*=\s*(.+)', s)
+            if m is not None:
+                dbcred[1] = m.group(1)
+            if dbcred[0] is not None and dbcred[1] is not None: break
+        f.close()
+        if dbcred[0] is not None and dbcred[1] is not None:
+            return dbcred
+        else:
+            return None
+    except IOError as e:
+        sys.stderr.write('ERR: failed to read /etc/amportal.conf: ' + str(e) + '\n')
+        return None
+
 
 def list_patton(dbpool):
-	'''Probe the network for Patton endpoints'''
-	global cancelprobe
-	
-	# Load the manufacturer ID for Patton
-	pattonid = None 
-	dbconn = None
-	try:
-		dbconn = dbpool.get()
-		sth = dbconn.cursor()
-		sth.execute('SELECT id FROM manufacturer WHERE name = %s', ('Patton',))
-		for row in sth.fetchall():
-			pattonid = row[0]
-		sth.close()
-		dbpool.put(dbconn)
-	except MySQLdb.Error as e:
-		sys.stderr.write('ERR: failed to load Patton ID: ' + str(e) + '\n')
-		if dbconn != None: dbpool.put(dbconn)
-		return
-	dbconn = None
-	
-	ICMP_ROUTER = 10
-	ICMP_ROUTER_PATTON = 74
-	MAX_RETRIES = 3
-	pack_format = '>2BHL' # C2nN
-	checksum = 0
-	extradata = 0xfee40022
-	
-	# Calculate proper checksum and build packet
-	packet = struct.pack(pack_format, ICMP_ROUTER, ICMP_ROUTER_PATTON, checksum, extradata)
-	for x in struct.unpack('>4H', packet): checksum += x
-	checksum = (~((checksum & 0xffff) + ((checksum >> 16) & 0xffff))) & 0xffff
-	packet = struct.pack(pack_format, ICMP_ROUTER, ICMP_ROUTER_PATTON, checksum, extradata)
-	
-	# Open raw ICMP socket, requires root privileges
-	try:
-		sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname('icmp'))
-	except socket.error as e:
-		sys.stderr.write('ERR: unable to create ICMP socket:' + str(e) + '\n')
-		return
-	sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-	
-	try:
-		retry = 0
-		routeranswered = False
-		while (retry < MAX_RETRIES and not cancelprobe and not routeranswered):
-			retry += 1
-			timestamp = int(time.time())
-			sock.sendto(packet, ('255.255.255.255', 0))
-			
-			while int(time.time()) <= timestamp and not cancelprobe:
-				rd,wr,er = select.select([sock], [], [], 0.2)
-				if len(rd) > 0:
-					response, routeraddr = sock.recvfrom(1024)
-									
-					# The response has an IP header that must be removed
-					packet_response, = struct.unpack('>B', response[0:1])
-					ndwords = packet_response & 0x0f
-					response = response[(ndwords * 4):]
+    '''Probe the network for Patton endpoints'''
+    global cancelprobe
 
-					# Parse and identify ICMP header
-					pack_format = '>2BH2BH'
-					if len(response) < struct.calcsize(pack_format): continue
-					icmptype, icmpcode, icmpchk, naddr, ndwords, lifetime \
-						= struct.unpack(pack_format, response[:(struct.calcsize(pack_format))])
-					# icmptype = 9 is Mobile IP Advertisement
-					# icmpcode = 0 is Normal router advertisement
-					if icmptype == 9 and icmpcode == 0:
-						response = response[(struct.calcsize(pack_format)):]
-						
-						pack_format = '>4BL'
-						pack_length = struct.calcsize(pack_format)
-						for j in range(0, naddr):
-							# These values are not currently used
-							if len(response) < pack_length: break
-							o1, o2, o3, o4, preference = struct.unpack(pack_format, response[:pack_length])
-							response = response[(ndwords * 4):]
-						
-						# The remainder of the packet should be key=value pairs
-						if len(response) > 0:
-							try:
-								routeranswered = True
-								process_endpoint(dbpool, routeraddr[0], None, pattonid)
-							except MySQLdb.Error as e:
-								break
-	except socket.error as e:
-		sys.stderr.write('ERR: unable to send/receive through ICMP socket:' + str(e) + '\n')		
-	sock.close()
+    # Load the manufacturer ID for Patton
+    pattonid = None
+    dbconn = None
+    try:
+        dbconn = dbpool.get()
+        sth = dbconn.cursor()
+        sth.execute('SELECT id FROM manufacturer WHERE name = %s', ('Patton',))
+        for row in sth.fetchall():
+            pattonid = row[0]
+        sth.close()
+        dbpool.put(dbconn)
+    except MySQLdb.Error as e:
+        sys.stderr.write('ERR: failed to load Patton ID: ' + str(e) + '\n')
+        if dbconn is not None: dbpool.put(dbconn)
+        return
+    dbconn = None
+
+    ICMP_ROUTER = 10
+    ICMP_ROUTER_PATTON = 74
+    MAX_RETRIES = 3
+    pack_format = '>2BHL' # C2nN
+    checksum = 0
+    extradata = 0xfee40022
+
+    # Calculate proper checksum and build packet
+    packet = struct.pack(pack_format, ICMP_ROUTER, ICMP_ROUTER_PATTON, checksum, extradata)
+    for x in struct.unpack('>4H', packet): checksum += x
+    checksum = (~((checksum & 0xffff) + ((checksum >> 16) & 0xffff))) & 0xffff
+    packet = struct.pack(pack_format, ICMP_ROUTER, ICMP_ROUTER_PATTON, checksum, extradata)
+
+    # Open raw ICMP socket, requires root privileges
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname('icmp'))
+    except socket.error as e:
+        sys.stderr.write('ERR: unable to create ICMP socket:' + str(e) + '\n')
+        return
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    try:
+        retry = 0
+        routeranswered = False
+        while (retry < MAX_RETRIES and not cancelprobe and not routeranswered):
+            retry += 1
+            timestamp = int(time.time())
+            sock.sendto(packet, ('255.255.255.255', 0))
+
+            while int(time.time()) <= timestamp and not cancelprobe:
+                rd,wr,er = select.select([sock], [], [], 0.2)
+                if len(rd) > 0:
+                    response, routeraddr = sock.recvfrom(1024)
+
+                    # The response has an IP header that must be removed
+                    packet_response, = struct.unpack('>B', response[0:1])
+                    ndwords = packet_response & 0x0f
+                    response = response[(ndwords * 4):]
+
+                    # Parse and identify ICMP header
+                    pack_format = '>2BH2BH'
+                    if len(response) < struct.calcsize(pack_format): continue
+                    icmptype, icmpcode, icmpchk, naddr, ndwords, lifetime \
+                        = struct.unpack(pack_format, response[:(struct.calcsize(pack_format))])
+                    # icmptype = 9 is Mobile IP Advertisement
+                    # icmpcode = 0 is Normal router advertisement
+                    if icmptype == 9 and icmpcode == 0:
+                        response = response[(struct.calcsize(pack_format)):]
+
+                        pack_format = '>4BL'
+                        pack_length = struct.calcsize(pack_format)
+                        for j in range(0, naddr):
+                            # These values are not currently used
+                            if len(response) < pack_length: break
+                            o1, o2, o3, o4, preference = struct.unpack(pack_format, response[:pack_length])
+                            response = response[(ndwords * 4):]
+
+                        # The remainder of the packet should be key=value pairs
+                        if len(response) > 0:
+                            try:
+                                routeranswered = True
+                                process_endpoint(dbpool, routeraddr[0], None, pattonid)
+                            except MySQLdb.Error as e:
+                                break
+    except socket.error as e:
+        sys.stderr.write('ERR: unable to send/receive through ICMP socket:' + str(e) + '\n')
+    sock.close()
+
 
 def list_mac_ips(dbpool, netmask):
-	'''Probe the network for endpoints using nmap'''
-	global cancelprobe
-	
-	# Load all of the MAC prefixes into a dictionary(MACPREFIX-->vendorid)
-	macprefix = {}
-	dbconn = None
-	try:
-		dbconn = dbpool.get()
-		sth = dbconn.cursor()
-		sth.execute(
-			'SELECT mac_prefix.mac_prefix, manufacturer.id '\
-			'FROM mac_prefix, manufacturer '\
-			'WHERE mac_prefix.id_manufacturer = manufacturer.id')
-		for row in sth.fetchall():
-			macprefix[row[0]] = row[1]
-		sth.close()
-		dbpool.put(dbconn)
-	except MySQLdb.Error as e:
-		sys.stderr.write('ERR: failed to load MAC prefixes: ' + str(e) + '\n')
-		if dbconn is not None:
-			dbpool.put(dbconn)
-		return
-	dbconn = None
-	
-	try:
-		r = subprocess.Popen(['/usr/bin/nmap', '-T4', '-sP', '-n', netmask],
-						stdout = subprocess.PIPE,
-						close_fds = True)
-		while True:
-			rd,wr,er = select.select([r.stdout], [], [], 0.1)
-			dataready = (len(rd) > 0)
-			running = (r.poll() is None)
-			
-			if not (running or dataready): break
-			
-			if dataready:
-				s = r.stdout.readline()
-				if s == b'' and not running:
-					break
-				m = re.search(b'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', s)
-				if m is not None:
-					ip = m.group(1).decode('utf-8')
-				m = re.search(b'MAC Address: (.*) \((.*)\)', s)
-				if m is not None:
-					mac = m.group(1).decode('utf-8')
-					if mac[:8] in macprefix:
-						try:
-							process_endpoint(dbpool, ip, mac, macprefix[mac[:8]])
-						except MySQLdb.Error as e:
-							os.kill(r.pid, signal.SIGTERM)
-							r.wait()
-			# Check for program end
-			if cancelprobe and running:
-				os.kill(r.pid, signal.SIGTERM)
-	except OSError as e:
-		sys.stderr.write('ERR: failed to spawn nmap: ' + str(e) + '\n')
+    '''Probe the network for endpoints using nmap'''
+    global cancelprobe
+
+    # Load all of the MAC prefixes into a dictionary(MACPREFIX-->vendorid)
+    macprefix = {}
+    dbconn = None
+    try:
+        dbconn = dbpool.get()
+        sth = dbconn.cursor()
+        sth.execute(
+            'SELECT mac_prefix.mac_prefix, manufacturer.id '\
+            'FROM mac_prefix, manufacturer '\
+            'WHERE mac_prefix.id_manufacturer = manufacturer.id')
+        for row in sth.fetchall():
+            macprefix[row[0]] = row[1]
+        sth.close()
+        dbpool.put(dbconn)
+    except MySQLdb.Error as e:
+        sys.stderr.write('ERR: failed to load MAC prefixes: ' + str(e) + '\n')
+        if dbconn is not None:
+            dbpool.put(dbconn)
+        return
+    dbconn = None
+
+    try:
+        r = subprocess.Popen(['/usr/bin/nmap', '-T4', '-sP', '-n', netmask],
+                        stdout = subprocess.PIPE,
+                        close_fds = True)
+        while True:
+            rd,wr,er = select.select([r.stdout], [], [], 0.1)
+            dataready = (len(rd) > 0)
+            running = (r.poll() is None)
+
+            if not (running or dataready): break
+
+            if dataready:
+                s = r.stdout.readline()
+                if s == b'' and not running:
+                    break
+                m = re.search(b'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', s)
+                if m is not None:
+                    ip = m.group(1).decode('utf-8')
+                m = re.search(b'MAC Address: (.*) \((.*)\)', s)
+                if m is not None:
+                    mac = m.group(1).decode('utf-8')
+                    if mac[:8] in macprefix:
+                        try:
+                            process_endpoint(dbpool, ip, mac, macprefix[mac[:8]])
+                        except MySQLdb.Error as e:
+                            os.kill(r.pid, signal.SIGTERM)
+                            r.wait()
+            # Check for program end
+            if cancelprobe and running:
+                os.kill(r.pid, signal.SIGTERM)
+    except OSError as e:
+        sys.stderr.write('ERR: failed to spawn nmap: ' + str(e) + '\n')
+
 
 def process_endpoint(dbpool, ip, mac, manufacturerid):
-	'''Process the endpoint, inserting or updating the database if required '''
-	global clients
-	global endpointChangeLog
-	global endpointClasses
-	
-	dbconn = None
-	try:
-		dbconn = dbpool.get()
-		sth = dbconn.cursor()
-		changeset = set()
-		
-		# Query the class of the manufacturer for later probing
-		if manufacturerid not in endpointClasses:
-			sth.execute('SELECT name FROM manufacturer WHERE id = %s', (manufacturerid,))
-			row = sth.fetchone()
-			manufacturername = row[0]
-			pkgname = manufacturername.replace('-', '')
-			pkg = 'issabel.vendor.' + pkgname
-			try:
-				vendormodule = __import__(pkg, {}, {}, pkg.split('.')[:-1])
-				endpointClasses[manufacturerid] = vendormodule.Endpoint
-			except ImportError as e:
-				endpointClasses[manufacturerid] = None
-		
-		# Remove any entry with IP collision and a different MAC
-		if mac is not None:
-			sqlquery = 'SELECT id FROM endpoint '\
-				'WHERE endpoint.last_known_ipv4 = %s '\
-				'AND ((id_manufacturer <> %s AND endpoint.mac_address IS NULL) '\
-					'OR endpoint.mac_address <> %s)'
-			sqlparams = (ip, manufacturerid, mac)
-		else:
-			sqlquery = 'SELECT id FROM endpoint '\
-				'WHERE endpoint.last_known_ipv4 = %s '\
-				'AND id_manufacturer <> %s'
-			sqlparams = (ip, manufacturerid)
-		sth.execute(sqlquery, sqlparams)
-		for row in sth.fetchall():
-			id_endpoint = row[0]
-			# Taking advantage of ON DELETE CASCADE in table definitions
-			sth.execute('DELETE FROM endpoint WHERE id = %s', (id_endpoint,))
-			changeset.add(('delete', id_endpoint))
-		
-		id_endpoint = None
-		if mac is not None:
-			# If the MAC matches, assume it is the same endpoint, and update the IP		
-			sth.execute('SELECT id FROM endpoint WHERE endpoint.mac_address = %s', (mac,))
-			rows = sth.fetchall()
-			if len(rows) > 0:
-				for row in rows:
-					id_endpoint = row[0]
-					sth.execute(
-						'UPDATE endpoint '\
-						'SET id_manufacturer = %s, last_known_ipv4 = %s, last_scanned = NOW() '\
-						'WHERE id = %s',
-						(manufacturerid, ip, id_endpoint))
-					changeset.add(('update', id_endpoint))
-		
-		# Read the ID of any entry with a matching IP address. There should be
-		# only one.
-		if id_endpoint is None:
-			sth.execute('SELECT id FROM endpoint WHERE endpoint.last_known_ipv4 = %s', (ip,))
-			rows = sth.fetchall()
-			if len(rows) > 0:
-				# Update scan time, manufacturer, MAC
-				for row in rows:
-					id_endpoint = row[0]
-					sth.execute(
-						'UPDATE endpoint '\
-						'SET id_manufacturer = %s, mac_address = %s, last_scanned = NOW() '\
-						'WHERE id = %s',
-						(manufacturerid, mac, id_endpoint))
-					changeset.add(('update', id_endpoint))
-			else:
-				# Insert new entry with scan time
-				sth.execute(
-					'INSERT INTO endpoint (id_manufacturer, mac_address, last_known_ipv4, last_scanned) '\
-					'VALUES (%s, %s, %s, NOW())',
-					(manufacturerid, mac, ip))
-				id_endpoint = sth.lastrowid
-				changeset.add(('insert', id_endpoint))
-		
-		sth.close()
-		dbconn.commit()
-		dbpool.put(dbconn)
-		
-		for tuple in changeset:
-			broadcast_change(tuple)
-		
-		# Try to probe the model of the discovered phone
-		if endpointClasses[manufacturerid] is not None:
-			eclass = endpointClasses[manufacturerid]
-			endpoint = eclass(None, dbpool, None, ip, mac)
-			gpool.spawn_n(probe_model, endpoint, id_endpoint)
-		
-	except MySQLdb.Error as e:
-		if dbconn is not None: dbpool.put(dbconn)
-		raise e
+    '''Process the endpoint, inserting or updating the database if required '''
+    global clients
+    global endpointChangeLog
+    global endpointClasses
 
-def broadcast_change(tuple):
-	global clients
-	global endpointChangeLog
+    dbconn = None
+    try:
+        dbconn = dbpool.get()
+        sth = dbconn.cursor()
+        changeset = set()
 
-	endpointChangeLog.add(tuple)
-	for fd in clients:		
-		try:
-			fd.sendall(b'%s %d\n' % (tuple[0].encode('utf-8'), tuple[1]))
-		except socket.error as e:
-			pass
+        # Query the class of the manufacturer for later probing
+        if manufacturerid not in endpointClasses:
+            sth.execute('SELECT name FROM manufacturer WHERE id = %s', (manufacturerid,))
+            row = sth.fetchone()
+            manufacturername = row[0]
+            pkgname = manufacturername.replace('-', '')
+            pkg = 'issabel.vendor.' + pkgname
+            try:
+                vendormodule = __import__(pkg, {}, {}, pkg.split('.')[:-1])
+                endpointClasses[manufacturerid] = vendormodule.Endpoint
+            except ImportError as e:
+                endpointClasses[manufacturerid] = None
+
+        # Remove any entry with IP collision and a different MAC
+        if mac is not None:
+            sqlquery = 'SELECT id FROM endpoint '\
+                'WHERE endpoint.last_known_ipv4 = %s '\
+                'AND ((id_manufacturer <> %s AND endpoint.mac_address IS NULL) '\
+                    'OR endpoint.mac_address <> %s)'
+            sqlparams = (ip, manufacturerid, mac)
+        else:
+            sqlquery = 'SELECT id FROM endpoint '\
+                'WHERE endpoint.last_known_ipv4 = %s '\
+                'AND id_manufacturer <> %s'
+            sqlparams = (ip, manufacturerid)
+        sth.execute(sqlquery, sqlparams)
+        for row in sth.fetchall():
+            id_endpoint = row[0]
+            # Taking advantage of ON DELETE CASCADE in table definitions
+            sth.execute('DELETE FROM endpoint WHERE id = %s', (id_endpoint,))
+            changeset.add(('delete', id_endpoint))
+
+        id_endpoint = None
+        if mac is not None:
+            # If the MAC matches, assume it is the same endpoint, and update the IP
+            sth.execute('SELECT id FROM endpoint WHERE endpoint.mac_address = %s', (mac,))
+            rows = sth.fetchall()
+            if len(rows) > 0:
+                for row in rows:
+                    id_endpoint = row[0]
+                    sth.execute(
+                        'UPDATE endpoint '\
+                        'SET id_manufacturer = %s, last_known_ipv4 = %s, last_scanned = NOW() '\
+                        'WHERE id = %s',
+                        (manufacturerid, ip, id_endpoint))
+                    changeset.add(('update', id_endpoint))
+
+        # Read the ID of any entry with a matching IP address. There should be
+        # only one.
+        if id_endpoint is None:
+            sth.execute('SELECT id FROM endpoint WHERE endpoint.last_known_ipv4 = %s', (ip,))
+            rows = sth.fetchall()
+            if len(rows) > 0:
+                # Update scan time, manufacturer, MAC
+                for row in rows:
+                    id_endpoint = row[0]
+                    sth.execute(
+                        'UPDATE endpoint '\
+                        'SET id_manufacturer = %s, mac_address = %s, last_scanned = NOW() '\
+                        'WHERE id = %s',
+                        (manufacturerid, mac, id_endpoint))
+                    changeset.add(('update', id_endpoint))
+            else:
+                # Insert new entry with scan time
+                sth.execute(
+                    'INSERT INTO endpoint (id_manufacturer, mac_address, last_known_ipv4, last_scanned) '\
+                    'VALUES (%s, %s, %s, NOW())',
+                    (manufacturerid, mac, ip))
+                id_endpoint = sth.lastrowid
+                changeset.add(('insert', id_endpoint))
+
+        sth.close()
+        dbconn.commit()
+        dbpool.put(dbconn)
+
+        for t in changeset:
+            broadcast_change(t)
+
+        # Try to probe the model of the discovered phone
+        if endpointClasses[manufacturerid] is not None:
+            eclass = endpointClasses[manufacturerid]
+            endpoint = eclass(None, dbpool, None, ip, mac)
+            gpool_counter.increment()
+            gpool.submit(_run_wrapper, probe_model, endpoint, id_endpoint)
+
+    except MySQLdb.Error as e:
+        if dbconn is not None: dbpool.put(dbconn)
+        raise e
+
+
+def broadcast_change(t):
+    global clients
+    global endpointChangeLog
+
+    endpointChangeLog.add(t)
+    for fd in clients:
+        try:
+            fd.sendall(b'%s %d\n' % (t[0].encode('utf-8'), t[1]))
+        except socket.error as e:
+            pass
+
 
 def probe_model(endpoint, id_endpoint):
-	endpoint.probeModel()
-	broadcast_change(('update', id_endpoint))
+    endpoint.probeModel()
+    broadcast_change(('update', id_endpoint))
+
 
 def process_client(fd):
-	global cancelprobe
-	global clients
-	global endpointChangeLog
-	
-	index = 1
-	for tuple in endpointChangeLog:
-		fd.sendall(b'%s %d\n' % (tuple[0], tuple[1]))
-		index += 1
-	
-	# Check for running > 1 because this method is running in the gpool
-	try:
-		closedHere = False
-		while not cancelprobe and gpool.running() > 1:
-			rd,_,_ = select.select([fd], [], [], 0.1)
-			if len(rd) > 0:
-				s = fd.readline()
-				if s[:4] == 'quit':
-					cancelprobe = True
-				fd.sendall(b'quit\n')
-				fd.close()
-				closedHere = True
-				break
-		if not closedHere:
-			fd.sendall(b'quit\n')
-			fd.close()
-	except socket.error as e:
-		sys.stderr.write('WARN: got error while processing client: %s\n' % str(e));
-	clients.remove(fd)
+    global cancelprobe
+    global clients
+    global endpointChangeLog
+
+    index = 1
+    for t in endpointChangeLog:
+        fd.sendall(b'%s %d\n' % (t[0].encode('utf-8'), t[1]))
+        index += 1
+
+    # Check for running > 1 because this method is running in the gpool
+    try:
+        closedHere = False
+        while not cancelprobe and gpool_counter.running > 1:
+            rd,_,_ = select.select([fd], [], [], 0.1)
+            if len(rd) > 0:
+                s = fd.readline()
+                if s[:4] == b'quit':
+                    cancelprobe = True
+                fd.sendall(b'quit\n')
+                fd.close()
+                closedHere = True
+                break
+        if not closedHere:
+            fd.sendall(b'quit\n')
+            fd.close()
+    except socket.error as e:
+        sys.stderr.write('WARN: got error while processing client: %s\n' % str(e));
+    clients.remove(fd)
 
 if __name__ == '__main__':
     main()
