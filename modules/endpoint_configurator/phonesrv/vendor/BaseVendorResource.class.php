@@ -35,7 +35,7 @@ class BaseVendorResource
     protected $_db;
     protected $_baseurl;
 
-    function BaseVendorResource($db, $baseurl)
+    function __construct($db, $baseurl)
     {
         $this->_db = $db;
         $this->_baseurl = $baseurl;
