@@ -137,9 +137,9 @@ class Endpoint(BaseEndpoint):
         # Attempt to login into admin telnet
         try:
             telnet.read_until('Login:', 10)
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
             telnet.read_until('Password:', 10)
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or login prompt
             idx, m, text = telnet.expect([r'Login:', r':>\s'], 10)
@@ -152,12 +152,12 @@ class Endpoint(BaseEndpoint):
                     telnet.write('Config/Lan/Change nmod dhcp\r\n')
                 else:
                     telnet.write('Config/Lan/Change nmod static\r\n')
-                    telnet.write('Config/Lan/Change ip ' + self._static_ip.encode() + '\r\n')
-                    telnet.write('Config/Lan/Change nm ' + self._static_mask.encode() + '\r\n')
-                    telnet.write('Config/Lan/Change gw ' + self._static_gw.encode() + '\r\n')
-                    telnet.write('Config/Lan/Change dns1 ' + self._static_dns1.encode() + '\r\n')
-                    telnet.write('Config/Lan/Change dns2 ' + self._static_dns2.encode() + '\r\n')
-                telnet.write('Config/Update/Change tftp ' + self._serverip.encode() + '\r\n')
+                    telnet.write('Config/Lan/Change ip ' + self._static_ip + '\r\n')
+                    telnet.write('Config/Lan/Change nm ' + self._static_mask + '\r\n')
+                    telnet.write('Config/Lan/Change gw ' + self._static_gw + '\r\n')
+                    telnet.write('Config/Lan/Change dns1 ' + self._static_dns1 + '\r\n')
+                    telnet.write('Config/Lan/Change dns2 ' + self._static_dns2 + '\r\n')
+                telnet.write('Config/Update/Change tftp ' + self._serverip + '\r\n')
                 telnet.write('System/Reboot\r\ny\r\n')
                 idx, m, text = telnet.expect([r'Reboot msg'], 10)
                 telnet.close()

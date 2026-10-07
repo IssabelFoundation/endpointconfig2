@@ -619,9 +619,9 @@ class Endpoint(BaseEndpoint):
         # Attempt to login into admin telnet
         try:
             #telnet.read_until('Login:')
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
             telnet.read_until('Password:', 10)
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or login prompt
             idx, m, text = telnet.expect([r'Password:', r'>\s?'], 10)

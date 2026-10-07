@@ -167,8 +167,8 @@ class Endpoint(BaseEndpoint):
         try:
             # Attempt to login into admin telnet
             telnet.read_until('Password:', 10)
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or password prompt
             idx, m, text = telnet.expect([r'Password:', r'P:\\>'], 10)
@@ -314,9 +314,9 @@ class Endpoint(BaseEndpoint):
         # Attempt to login into admin telnet
         try:
             telnet.read_until('Login:', 10)
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
             #telnet.read_until('Password:')
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or login prompt
             idx, m, text = telnet.expect([r'Login:', r'# '], 10)
@@ -325,7 +325,7 @@ class Endpoint(BaseEndpoint):
                 logging.error('Endpoint %s@%s detected ACCESS DENIED on telnet connect')
                 return False
             else:
-                telnet.write('download tftp -ip ' + self._serverip.encode() + ' -file ' + sConfigFile.encode() + '\r\n')
+                telnet.write('download tftp -ip ' + self._serverip + ' -file ' + sConfigFile + '\r\n')
                 idx, m, text = telnet.expect([r'# '], 10)
                 if 'failed' in text:
                     logging.error('Endpoint %s@%s failed to retrieve new config' % (self._vendorname, self._ip))

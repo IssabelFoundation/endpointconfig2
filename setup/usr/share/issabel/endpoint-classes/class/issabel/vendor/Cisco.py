@@ -243,7 +243,7 @@ class Endpoint(BaseEndpoint):
         try:
             # Attempt login with default credentials
             telnet.read_until('Password :', 10)
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')            
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')            
             
             idx, m, text = telnet.expect([r'Password :', r'> '], 10)
             if idx == 0:
