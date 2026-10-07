@@ -428,10 +428,15 @@ class BaseEndpoint(object):
 
     @staticmethod
     def _fetchTemplate(sTemplate, vars):
-        tmpl = tempita.Template.from_filename(ENDPOINT_DIR + '/tpl/' + sTemplate)
+        # encoding='utf-8' is required: from_filename() reads the file in binary
+        # and only decodes when an encoding is given. Without it tempita's parser
+        # receives bytes and dies with
+        #   TypeError: cannot use a string pattern on a bytes-like object
+        # so no template reached substitute() at all.
+        tmpl = tempita.Template.from_filename(ENDPOINT_DIR + '/tpl/' + sTemplate, encoding='utf-8')
         # Check for custom DIR
         if isfile (ENDPOINT_CUSTOM_DIR + '/tpl/' + sTemplate):
-            tmpl = tempita.Template.from_filename(ENDPOINT_CUSTOM_DIR + '/tpl/' + sTemplate)
+            tmpl = tempita.Template.from_filename(ENDPOINT_CUSTOM_DIR + '/tpl/' + sTemplate, encoding='utf-8')
         return tmpl.substitute(vars)
 
     @staticmethod
@@ -446,6 +451,14 @@ class BaseEndpoint(object):
         except OSError as e:
             # swallow "no such file", re-raise anything else
             if e.errno != errno.ENOENT: raise e
+        # Callers pass both str and bytes: _fetchTemplate() renders with tempita
+        # and minidom.toxml() without an encoding both give str, while
+        # Grandstream's struct.pack and RCA's toxml('UTF-8') give bytes. The file
+        # is opened in binary mode, so encode the str side as UTF-8 - which is
+        # what the templates are in, down to the BOM on
+        # Polycom_global_sip_2.tpl.
+        if isinstance(content, str):
+            content = content.encode('utf-8')
         f = open(filepath, 'wb')
         f.write(content)
         f.close()
