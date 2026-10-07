@@ -112,7 +112,7 @@ if [ $1 -eq 1 ]; then #install
     issabel-dbprocess "install" "$pathModule/setup/db"
 
   # Restart apache to disable HTTPS redirect on phonesrv script
-  /sbin/service httpd restart
+  /usr/sbin/service httpd restart
 elif [ $1 -eq 2 ]; then #update
     issabel-dbprocess "update"  "$pathModule/setup/db" "$preversion"
 fi
