@@ -78,7 +78,7 @@ class Endpoint(BaseEndpoint):
             htmlbody = response.read()
             if response.code == 200:
                 # <TITLE>snom 320</TITLE>
-                m = re.search(r'<TITLE>snom (\w+)</TITLE>', htmlbody, re.IGNORECASE)
+                m = re.search(r'<TITLE>snom (\w+)</TITLE>', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
                 if m != None: sModel = m.group(1)
         #except urllib3.HTTPError as e:
         #    if e.code == 401 and 'WWW-Authenticate' in e.headers:
@@ -242,7 +242,7 @@ class Endpoint(BaseEndpoint):
             
             # If the phone is used for the first time, it will show an EULA that
             # must be accepted in order to continue.
-            m = re.search(r'<input type="radio" name="eula" value="(.+?)">', htmlbody)
+            m = re.search(r'<input type="radio" name="eula" value="(.+?)">', htmlbody.decode('utf-8', 'replace'))
             if m != None:
                 logging.warning('Endpoint %s@%s accepting EULA...' % (self._vendorname, self._ip))
                 postvars = {'eula' : m.group(1), 'save' : 'Submit'}

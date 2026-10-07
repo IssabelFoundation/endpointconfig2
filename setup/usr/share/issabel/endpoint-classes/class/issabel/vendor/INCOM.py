@@ -50,7 +50,7 @@ class Endpoint(BaseEndpoint):
             htmlbody = response.read()
             if response.code == 200:
                 # <title>ICW-1000</title>
-                m = re.search(r'<title>(ICW-\w+)</title>', htmlbody, re.IGNORECASE)
+                m = re.search(r'<title>(ICW-\w+)</title>', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
                 if m != None: sModel = m.group(1)
         except Exception as e:
             pass

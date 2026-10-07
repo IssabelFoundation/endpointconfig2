@@ -75,7 +75,7 @@ class Endpoint(BaseEndpoint):
             # Attempt to tickle a 401 Unauthorized from the server.
             response = urllib.request.urlopen('http://' + self._ip + '/cgi-bin/')
             htmlbody = response.read()
-            urlmatch = re.findall(r'<a href="(.+?)">', htmlbody, re.IGNORECASE)
+            urlmatch = re.findall(r'<a href="(.+?)">', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
             for url in urlmatch:
                 response = urllib.request.urlopen('http://' + self._ip + '/cgi-bin/' + url)
                 htmlbody = response.read()
@@ -125,7 +125,7 @@ class Endpoint(BaseEndpoint):
                         for sourceUrl in sourceList:
                             response = opener.open('http://' + self._ip + sourceUrl)
                             htmlbody = response.read()
-                            m = re.search(r'UserAgent\s*=\s*(Yealink)?\s*(\S+)', htmlbody)
+                            m = re.search(r'UserAgent\s*=\s*(Yealink)?\s*(\S+)', htmlbody.decode('utf-8', 'replace'))
                             if (m != None): sModel = m.group(2)
                     except urllib.error.HTTPError as e:
                         if e.code != 404:
@@ -141,7 +141,7 @@ class Endpoint(BaseEndpoint):
                 try:
                     response = urllib.request.urlopen('http://' + self._ip + '/servlet?p=login&q=loginForm&jumpto=status')
                     htmlbody = response.read()
-                    m = re.search(r'T\("Enterprise IP phone (\S+)"\)', htmlbody, re.IGNORECASE)
+                    m = re.search(r'T\("Enterprise IP phone (\S+)"\)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
                     if (m != None): sModel = m.group(1)
                 except urllib.error.HTTPError as e:
                     logging.warning('Endpoint %s@%s failed to identify model from form login: %s' %

@@ -56,7 +56,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
             htmlbody = response.read()
             if response.code == 200:
                 # RCA IP150 (Glass.GB.2.0/4085) Settings
-                m = re.search(r'RCA (\w+)', htmlbody)
+                m = re.search(r'RCA (\w+)', htmlbody.decode('utf-8', 'replace'))
                 if m != None: sModel = m.group(1)
         except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:

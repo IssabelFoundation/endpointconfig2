@@ -245,7 +245,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             'UserName' : http_user,
             'Password' : http_pass}))
         body = response.read()
-        m = re.search(r"id=hcSingleResult type=hidden value='(.+?)'", body)
+        m = re.search(r"id=hcSingleResult type=hidden value='(.+?)'", body.decode('utf-8', 'replace'))
         if m is None:
             return (None, None)
         encrypted_password = m.group(1)
@@ -263,7 +263,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         
         # Find new SessionId value. What, no Set-Cookie header?
         body = response.read()
-        m = re.search(r"id=hcSessionIdNow type=hidden value='(.+?)'", body)
+        m = re.search(r"id=hcSessionIdNow type=hidden value='(.+?)'", body.decode('utf-8', 'replace'))
         if m != None:
             sesscookie = http.cookiejar.Cookie(None, 'SessionId', m.group(1), None, False,
                 self._ip, False, False,

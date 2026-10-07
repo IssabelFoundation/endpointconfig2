@@ -57,7 +57,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             #  <td width="220"><script> document.write(jscs.product_type);</script></td>
             #  <td width="250">UC862</td>
             #  <TR>
-            m = m = re.search(r'product_type\);</script></TD>.*?<TD.*?>(\w+)', htmlbody, re.IGNORECASE | re.DOTALL)
+            m = m = re.search(r'product_type\);</script></TD>.*?<TD.*?>(\w+)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE | re.DOTALL)
             if m != None:
                 sModel = m.group(1)
         except Exception as e:

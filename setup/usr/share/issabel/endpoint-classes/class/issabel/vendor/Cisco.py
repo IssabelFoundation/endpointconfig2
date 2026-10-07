@@ -117,7 +117,7 @@ class Endpoint(BaseEndpoint):
             htmlbody = response.read()
 
             # Search for the text that contains the Cisco phone model
-            model_match = re.search(r'IP Phone CP-(\w+)', htmlbody, re.IGNORECASE)
+            model_match = re.search(r'IP Phone CP-(\w+)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
 
             if model_match:
                 sModel = model_match.group(1)

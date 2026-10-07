@@ -111,7 +111,7 @@ class Endpoint(BaseEndpoint):
                 #IP115
                 #
                 # </font></span></strong><br>
-                m = re.search(r'<font face="\w+">\s+(\w+)\s+</font>', htmlbody, re.IGNORECASE | re.DOTALL)
+                m = re.search(r'<font face="\w+">\s+(\w+)\s+</font>', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE | re.DOTALL)
                 if m != None:
                     self._saveVendor('RCA')
                     sModel = m.group(1)

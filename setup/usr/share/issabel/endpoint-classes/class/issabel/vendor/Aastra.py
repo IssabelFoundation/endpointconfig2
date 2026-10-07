@@ -87,7 +87,7 @@ class Endpoint(BaseEndpoint):
                         #    <TD style="BORDER-BOTTOM: 1px dashed">Platform</TD>
                         #    <TD style="BORDER-BOTTOM: 1px dashed">9112i Revision 0</TD></TR>
                         #  <TR>
-                        m = re.search(r'Platform</TD>.*?<TD.*?>(\w+)', htmlbody, re.IGNORECASE | re.DOTALL)
+                        m = re.search(r'Platform</TD>.*?<TD.*?>(\w+)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE | re.DOTALL)
                         if m != None:
                             sModel = m.group(1)
                     except Exception as e:

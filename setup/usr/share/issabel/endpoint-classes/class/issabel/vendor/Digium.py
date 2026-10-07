@@ -55,7 +55,7 @@ class Endpoint(BaseEndpoint):
             response = urllib.request.urlopen('http://' + self._ip + '/cgi-bin/prefetch.cgi')
             htmlbody = response.read()
             if response.code == 200:
-                m = re.search(r'setting id="phone_model" value="(\w+)"', htmlbody)
+                m = re.search(r'setting id="phone_model" value="(\w+)"', htmlbody.decode('utf-8', 'replace'))
                 if m != None: sModel = m.group(1)
         except Exception as e:
             pass
