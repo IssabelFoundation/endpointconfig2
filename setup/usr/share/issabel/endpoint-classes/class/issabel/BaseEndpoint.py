@@ -311,13 +311,13 @@ class BaseEndpoint(object):
             sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip,));
             row = sth.fetchone()
             if row is not None:
-                id = row[0]
+                row_id = row[0]
 
                 sth.execute(\
                     'UPDATE endpoint SET last_configured = NOW(), selected = 0, authtoken_sha1 = %s WHERE id = %s',\
-                    (self._authtoken_sha1, id,))
+                    (self._authtoken_sha1, row_id,))
                 if not self._dhcp and self._static_ip is not None and self._static_ip != self._ip:
-                    sth.execute('UPDATE endpoint SET last_known_ipv4 = %s WHERE id = %s', (self._static_ip, id,))
+                    sth.execute('UPDATE endpoint SET last_known_ipv4 = %s WHERE id = %s', (self._static_ip, row_id,))
                     self._ip = self._static_ip
             sth.close()
             dbconn.commit()
@@ -361,11 +361,11 @@ class BaseEndpoint(object):
             sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip,));
             row = sth.fetchone()
             if row is not None:
-                id = row[0]
+                row_id = row[0]
 
                 sth.execute(\
                     'UPDATE endpoint SET authtoken_sha1 = %s WHERE id = %s',\
-                    (self._authtoken_sha1, id,))
+                    (self._authtoken_sha1, row_id,))
             sth.close()
             dbconn.commit()
             self._dbpool.put(dbconn)
