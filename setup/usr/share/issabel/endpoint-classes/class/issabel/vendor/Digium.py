@@ -333,7 +333,8 @@ class Endpoint(BaseEndpoint):
         try:
             f = open('/etc/asterisk/res_digium_phone.conf', 'wb')
             for currentsection in configsections:
-                f.write(currentsection['rawtext'])
+                # rawtext is str: it is built by concatenating config values.
+                f.write(currentsection['rawtext'].encode('utf-8'))
             f.close()
             return True
         except IOError as e:
@@ -402,7 +403,9 @@ class Endpoint(BaseEndpoint):
             # Write updated file and reload chan_sip
             if modified:
                 f = open('/etc/asterisk/sip_general_custom.conf', 'wb')
-                f.write(content)
+                # content is str: it is built by concatenating lines read in text
+                # mode and values from properties.
+                f.write(content.encode('utf-8'))
                 f.close()
                 
                 ami = amipool.get()
