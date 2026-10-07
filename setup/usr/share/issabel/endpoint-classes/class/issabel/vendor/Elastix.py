@@ -64,7 +64,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             try:
                 opener, body = self._getAuthOpener_LXP150('admin', 'admin')
                 if not opener is None:
-                    m = re.search(r"id=hcProductName type=hidden value='(.+?)'", body)
+                    m = re.search(r"id=hcProductName type=hidden value='(.+?)'", body.decode('utf-8', 'replace'))
                     if m != None:
                         if m.group(1) == 'SP-R50':
                             sModel = 'LXP150'
