@@ -152,8 +152,8 @@ class Endpoint(issabel.vendor.Atcom.Endpoint):
                 logging.error('Endpoint %s@%s failed to post configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))
                 status = False
-            elif (not 'Submit Success' in htmlbody):
-                if not ('Phone in rebooting' in htmlbody):
+            elif (not b'Submit Success' in htmlbody):
+                if not (b'Phone in rebooting' in htmlbody):
                     logging.error('Endpoint %s@%s failed to post configuration - unknown body follows: %s' %
                         (self._vendorname, self._ip, htmlbody))
                     status = False

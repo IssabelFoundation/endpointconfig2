@@ -59,7 +59,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         except Exception as e:
             pass
 
-        if  sModel == None and 'fcgi/do?id=1' in htmlbody:
+        if  sModel == None and b'fcgi/do?id=1' in htmlbody:
             # This condition means we got an LXP150 or LXP250
             try:
                 opener, body = self._getAuthOpener_LXP150('admin', 'admin')
@@ -336,7 +336,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                 socket.setdefaulttimeout(oldtimeout)
 
             body = response.read()
-            if not 'reboot' in body.lower():
+            if not b'reboot' in body.lower():
                 logging.error('Endpoint %s@%s failed to maintain authentication (POST)' %
                         (self._vendorname, self._ip))
                 os.remove(sConfigPath)

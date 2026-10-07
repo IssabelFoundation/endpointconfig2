@@ -182,7 +182,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
                     'j_password' : self._http_password
                 }))
             body = response.read()
-            if not '/console/start' in body:
+            if not b'/console/start' in body:
                 logging.error('Endpoint %s@%s - j_security_check failed login' %
                     (self._vendorname, self._ip))
                 return False
@@ -211,7 +211,7 @@ class Endpoint(issabel.vendor.Escene.Endpoint):
                 socket.setdefaulttimeout(oldtimeout)
             body = response.read()
                 
-            if not 'Configuration restore complete' in body:
+            if not b'Configuration restore complete' in body:
                 logging.error('Endpoint %s@%s - configuration post failed' %
                     (self._vendorname, self._ip))
                 return False

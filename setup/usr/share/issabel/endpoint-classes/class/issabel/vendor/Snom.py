@@ -347,7 +347,7 @@ class Endpoint(BaseEndpoint):
                 urlencode(postvars),
                 {'Cookie' : self._cookie_v2}))
             htmlbody = response.read()
-            if not 'Please reboot the device' in htmlbody:
+            if not b'Please reboot the device' in htmlbody:
                 logging.error('Endpoint %s@%s failed to save provisioning or network settings' %
                         (self._vendorname, self._ip))
                 return False
@@ -382,7 +382,7 @@ class Endpoint(BaseEndpoint):
                 }
             response = urllib.request.urlopen('http://' + self._ip + '/advanced_network.htm', urlencode(postvars))
             htmlbody = response.read()
-            if 'CONFIRM_REBOOT' in htmlbody:
+            if b'CONFIRM_REBOOT' in htmlbody:
                 response = urllib.request.urlopen('http://' + self._ip + '/advanced_network.htm', 'CONFIRM_REBOOT=Reboot')
                 htmlbody = response.read()
                 response = urllib.request.urlopen('http://' + self._ip + '/confirm.htm', 'REBOOT=Yes')

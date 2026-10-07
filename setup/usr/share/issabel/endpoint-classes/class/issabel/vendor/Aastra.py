@@ -220,7 +220,7 @@ class Endpoint(BaseEndpoint):
                 logging.error('Endpoint %s@%s failed to post configuration - %s' %
                     (self._vendorname, self._ip, r))
                 return False
-            if not 'Provisioning complete' in htmlbody:
+            if not b'Provisioning complete' in htmlbody:
                 logging.error('Endpoint %s@%s failed to set configuration server - not provisioned' %
                     (self._vendorname, self._ip))
                 return False            

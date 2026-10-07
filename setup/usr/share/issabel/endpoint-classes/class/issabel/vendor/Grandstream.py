@@ -297,7 +297,7 @@ class Endpoint(BaseEndpoint):
             response = opener.open('http://' + self._ip + '/dologin.htm',
                 urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
             body = response.read()
-            if 'dologin.htm' in body:
+            if b'dologin.htm' in body:
                 logging.error('Endpoint %s@%s BT200 - dologin failed login' %
                     (self._vendorname, self._ip))
                 return False
@@ -309,7 +309,7 @@ class Endpoint(BaseEndpoint):
             response = opener.open('http://' + self._ip + '/update.htm',
                 urlencode(vars) + '&gnkey=0b82')
             body = response.read()
-            if 'dologin.htm' in body:
+            if b'dologin.htm' in body:
                 logging.error('Endpoint %s@%s BT200 - dologin failed to keep session' %
                     (self._vendorname, self._ip))
                 return False
@@ -480,7 +480,7 @@ class Endpoint(BaseEndpoint):
                 'Secret' : self._http_password,
                 'time':     (int)(time.time())}))
             body = response.read()
-            if 'Error' in body:
+            if b'Error' in body:
                 logging.error('Endpoint %s@%s GXV - dologin failed login' %
                     (self._vendorname, self._ip))
                 return False
@@ -502,7 +502,7 @@ class Endpoint(BaseEndpoint):
                 varcount += 1
             response = opener.open('http://' + self._ip + '/manager?' + urlencode(submitvars))
             body = response.read()
-            if not ('Success' in body):
+            if not (b'Success' in body):
                 logging.error('Endpoint %s@%s GXV - dologin failed to keep session' %
                     (self._vendorname, self._ip))
                 return False
@@ -575,7 +575,7 @@ class Endpoint(BaseEndpoint):
             response = opener.open('http://' + self._ip + '/cgi-bin/dologin',
                 urlencode({'Login' : 'Login', 'P2' : self._http_password, 'gnkey' : '0b82'}))
             body = response.read()
-            if 'dologin' in body:
+            if b'dologin' in body:
                 logging.error('Endpoint %s@%s GXP1450 - dologin failed login' %
                     (self._vendorname, self._ip))
                 return False
@@ -583,7 +583,7 @@ class Endpoint(BaseEndpoint):
             response = opener.open('http://' + self._ip + '/cgi-bin/update',
                 urlencode(vars) + '&gnkey=0b82')
             body = response.read()
-            if 'dologin' in body:
+            if b'dologin' in body:
                 logging.error('Endpoint %s@%s GXP1450 - dologin failed to keep session' %
                     (self._vendorname, self._ip))
                 return False
