@@ -115,7 +115,7 @@ class Endpoint(BaseEndpoint):
             # The body is JSON but Content-Type is set to text/plain
             response = urllib.request.urlopen('http://' + self._ip + ':8080/xpdb.uds?mode=list&db=config')
             body = response.read()
-            jsonvars = json.decode(body)
+            jsonvars = json.loads(body)   # json.decode() never existed; loads() accepts bytes
 
             # Use the JSON map to find out values for sid and eid
             varmap = {

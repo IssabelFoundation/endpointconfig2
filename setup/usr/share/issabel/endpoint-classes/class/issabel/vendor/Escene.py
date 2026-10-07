@@ -253,7 +253,8 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        dom.unlink()
+        # xml.dom.minidom.Document has no unlink(); that was the old xml.dom API.
+        # Dropping the reference is enough.
         dom = None
         
         return True
@@ -278,7 +279,8 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        dom.unlink()
+        # xml.dom.minidom.Document has no unlink(); that was the old xml.dom API.
+        # Dropping the reference is enough.
         dom = None
         
         return True
