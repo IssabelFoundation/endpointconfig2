@@ -3,7 +3,7 @@
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 6.0.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -12,7 +12,7 @@ BuildArch: noarch
 Requires: issabel-framework >= 5.0.0-1
 Requires: issabel-agenda >= 4.0.0-1
 Requires: epel-release
-Requires: php-simplepie
+Requires: issabel-php-simplepie
 Requires: nmap
 Requires: tftp-server
 Requires: python3-mysqlclient
@@ -72,6 +72,11 @@ mv setup/etc/httpd/ $RPM_BUILD_ROOT/etc/
 
 mv setup/usr/ $RPM_BUILD_ROOT/
 mkdir -p $RPM_BUILD_ROOT/usr/local/share/issabel/endpoint-classes/tpl
+
+# Los .tpl/.xml de plantillas y los datos de tftpboot/module_installer no son
+# scripts; el bit de ejecucion heredado del repo dispara brp-mangle-shebangs,
+# que falla con el "#!version:..." que abre las plantillas de Yealink.
+find $RPM_BUILD_ROOT \( -path '*/endpoint-classes/*' -o -path '*/tftpboot/*' -o -path '*/module_installer/*' \) -type f -exec chmod 644 {} +
 
 rm -rf setup/build/
 
