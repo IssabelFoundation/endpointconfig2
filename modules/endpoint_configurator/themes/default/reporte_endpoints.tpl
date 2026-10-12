@@ -18,7 +18,7 @@
         <span id="issabel-module-error-message-text"></span>
     </p>
 </div>
-<div id="endpointConfigApplication" style="background-color: #f0f0f0;">
+<div id="endpointConfigApplication" style="background-color: var(--iss-body-bg); color: var(--iss-text);">
 
 <script type="text/x-handlebars" data-template-name="loading">
 <div style="text-align: center; padding: 40px;"><img src="images/loading.gif" /></div>
