@@ -3,7 +3,7 @@
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 6.0.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
