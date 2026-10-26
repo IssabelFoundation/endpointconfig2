@@ -3,7 +3,7 @@
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 6.0.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -158,6 +158,12 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Mon Oct 26 2026 Issabel Foundation <info@issabel.org> - 6.0.0-5
+- Bump the release so upgrades re-run %post against the new issabel-dbprocess,
+  which installs the endpointconfig database from the schema when it is missing
+  instead of only emitting `USE endpointconfig;`. This heals installs where the
+  original %post was deferred to firstboot and the spool was never applied.
+
 * Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-4
 - Escape the rpm queryformat used to record the pre-version on upgrade.
   The VERSION and RELEASE macros were expanded at build time, so %pre always
