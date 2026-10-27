@@ -96,5 +96,15 @@ $arrLangModule = array(
     "Invalid endpoint ID" => "Неправильний ID обладнання",
     'Registered at' => 'Зареєстровано за',
     'This account is in use by an unsupported/unscanned host' => 'Цей обліковий запис використовується непідтримуваним/несканованим хостом',
+    "Accounts" => "Облікові записи",
+    "Network" => "Мережа",
+    "(unimplemented in DB)" => "(не реалізовано в БД)",
+    "Actions" => "Дії",
+    "%s is required" => "%s є обов’язковим",
+    "%s is invalid" => "%s є недійсним",
+    "Required field" => "Обов’язкове поле",
+    "Current IP" => "Поточна IP-адреса",
+    "Manufacturer" => "Виробник",
+    "Model" => "Модель",
 );
 ?>

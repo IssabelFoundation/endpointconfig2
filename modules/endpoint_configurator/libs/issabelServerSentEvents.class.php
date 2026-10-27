@@ -21,12 +21,12 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: paloServerSentEvents.class.php, Sun 08 Oct 2023 06:04:03 PM EDT, nicolas@issabel.com
+  $Id: issabelServerSentEvents.class.php, Sun 08 Oct 2023 06:04:03 PM EDT, nicolas@issabel.com
 */
 require_once 'libs/misc.lib.php';
 require_once 'libs/paloSantoJSON.class.php';
 
-class paloServerSentEvents
+class issabelServerSentEvents
 {
     private $_implementation;
     private $_module_name;
@@ -164,7 +164,7 @@ class paloServerSentEvents
     {
         print $s;
         $this->debug($s);
-        ob_flush();
+        if (ob_get_level() > 0) ob_flush();
         flush();
     }
 

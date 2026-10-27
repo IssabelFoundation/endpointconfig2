@@ -1,0 +1,105 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 0.5                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2006 Palosanto Solutions S. A.                         |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
+  +----------------------------------------------------------------------+
+  $Id: ru.lang $
+*/
+global $arrLangModule;
+$arrLangModule = array(
+    "Information" => "Информация",
+    "Custom credentials" => "Пользовательские учётные данные",
+    "Custom endpoint properties" => "Пользовательские свойства устройства",
+    "Static configuration requires the following network parameter" => "Статическая конфигурация требует следующего сетевого параметра",
+    "The following network parameter is not a valid IPv4 address" => "Следующий сетевой параметр не является допустимым адресом IPv4",
+    "Custom endpoint property collides with the following read-only property" => "Пользовательское свойство устройства конфликтует со следующим свойством только для чтения",
+    "Custom endpoint property collides with the following read-write property" => "Пользовательское свойство устройства конфликтует со следующим свойством для чтения и записи",
+    "Malformed request" => "Некорректный запрос",
+    "Account is missing required property" => "В учётной записи отсутствует обязательное свойство",
+    "Unsupported tech" => "Неподдерживаемая технология",
+    "Duplicate account" => "Дублирующаяся учётная запись",
+    "(internal) Failed to check model" => "(внутренняя ошибка) Не удалось проверить модель",
+    "Endpoint not found" => "Устройство не найдено",
+    "Model not set for endpoint" => "Модель не задана для устройства",
+    "(internal) Failed to check account limit" => "(внутренняя ошибка) Не удалось проверить лимит учётных записей",
+    "Maximum number of accounts exceeded" => "Превышено максимальное число учётных записей",
+    "Endpoint does not support static IP address" => "Устройство не поддерживает статический IP-адрес",
+    "Endpoint does not support dynamic IP address" => "Устройство не поддерживает динамический IP-адрес",
+    "(internal) Failed to load model properties" => "(внутренняя ошибка) Не удалось загрузить свойства модели",
+    "Maximum number of accounts exceeded for tech" => "Превышено максимальное число учётных записей для технологии",
+    "(internal) Failed to remove old properties" => "(внутренняя ошибка) Не удалось удалить старые свойства",
+    "(internal) Failed to insert new property" => "(внутренняя ошибка) Не удалось вставить новое свойство",
+    "(internal) Failed to read available accounts" => "(внутренняя ошибка) Не удалось прочитать доступные учётные записи",
+    "Account not found" => "Учётная запись не найдена",
+    "Account claimed by another endpoint" => "Учётная запись занята другим устройством",
+    "(internal) Failed to remove old account associations" => "(внутренняя ошибка) Не удалось удалить старые связи учётных записей",
+    "(internal) Failed to insert account association" => "(внутренняя ошибка) Не удалось вставить связь учётной записи",
+    "(internal) Failed to insert account property" => "(внутренняя ошибка) Не удалось вставить свойство учётной записи",
+    "(internal) Failed to update modification time" => "(внутренняя ошибка) Не удалось обновить время изменения",
+    "(unknown)" => "(неизвестно)",
+    "Yes" => "Да",
+    "No" => "Нет",
+    "(unknown/not detected)" => "(неизвестно/не обнаружено)",
+    "Maximum number of SIP accounts" => "Максимальное число учётных записей SIP",
+    "Maximum number of IAX2 accounts" => "Максимальное число учётных записей IAX2",
+    "MAC" => "MAC",
+    "This flag is set if phone can get an IP address via DHCP" => "Этот флаг устанавливается, если телефон может получить IP-адрес по DHCP",
+    "Dynamic IP supported" => "Поддерживается динамический IP",
+    "This flag is set if phone can be configured to use a static IP address" => "Этот флаг устанавливается, если телефон можно настроить на статический IP-адрес",
+    "Static IP supported" => "Поддерживается статический IP",
+    "This flag is set if phone supports QoS with VLAN" => "Этот флаг устанавливается, если телефон поддерживает QoS с VLAN",
+    "VLAN supported" => "Поддерживается VLAN",
+    "This flag is set if phone can query its configuration without cooperation of DHCP" => "Этот флаг устанавливается, если телефон может запросить конфигурацию без участия DHCP",
+    "Static provisioning supported" => "Поддерживается статическое предоставление",
+    "Unassigned accounts" => "Неназначенные учётные записи",
+    "Assigned accounts" => "Назначенные учётные записи",
+    "Properties for" => "Свойства для",
+    "No account selected." => "Учётная запись не выбрана.",
+    "Dynamic IP (DHCP)" => "Динамический IP (DHCP)",
+    "Static IP" => "Статический IP",
+    "Static network attributes" => "Атрибуты статической сети",
+    "IP" => "IP",
+    "Network mask" => "Маска сети",
+    "Gateway" => "Шлюз",
+    "Primary DNS" => "Основной DNS",
+    "Secondary DNS" => "Дополнительный DNS",
+    "Telnet username" => "Имя пользователя Telnet",
+    "Telnet password" => "Пароль Telnet",
+    "HTTP username" => "Имя пользователя HTTP",
+    "HTTP password" => "Пароль HTTP",
+    "SSH username" => "Имя пользователя SSH",
+    "SSH password" => "Пароль SSH",
+    "DIALOG_STANDARD_PROPERTIES_MESSAGE" =>
+        "Любые дополнительные параметры, необходимые для правильной настройки устройства ".
+        "и не охваченные другими экранами, следует вводить здесь. Учтите, что не все серверные ".
+        "реализации производителей распознают все возможные свойства. Любые нераспознанные ".
+        "свойства будут проигнорированы. Однако некорректные известные свойства могут помешать ".
+        "успешной настройке устройства. Все свойства и значения чувствительны к регистру.",
+    "Property" => "Свойство",
+    "Value" => "Значение",
+    "Invalid endpoint ID" => "Недопустимый идентификатор устройства",
+    "Registered at" => "Зарегистрирован в",
+    "This account is in use by an unsupported/unscanned host" => "Эта учётная запись используется неподдерживаемым/несканированным узлом",
+    "Accounts" => "Учётные записи",
+    "Network" => "Сеть",
+    "(unimplemented in DB)" => "(не реализовано в БД)",
+    "Actions" => "Действия",
+    "%s is required" => "%s обязательно",
+    "%s is invalid" => "%s недопустимо",
+    "Required field" => "Обязательное поле",
+    "Current IP" => "Текущий IP",
+    "Manufacturer" => "Производитель",
+    "Model" => "Модель",
+);
+?>

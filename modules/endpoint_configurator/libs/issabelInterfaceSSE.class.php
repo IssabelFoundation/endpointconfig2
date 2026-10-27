@@ -23,7 +23,7 @@
   $Id: index.php,v 1.1 2007/01/09 23:49:36 alex Exp $
 */
 
-abstract class paloInterfaceSSE
+abstract class issabelInterfaceSSE
 {
     protected $_errMsg = NULL;
     function getErrMsg() { return $this->_errMsg; }

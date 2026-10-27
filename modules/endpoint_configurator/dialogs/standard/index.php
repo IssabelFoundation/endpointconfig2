@@ -72,8 +72,11 @@ class Dialog_Standard
             'DIALOG_STANDARD_PROPERTIES_MESSAGE'    =>  _tr('DIALOG_STANDARD_PROPERTIES_MESSAGE'),
             'DIALOG_STANDARD_LBL_PROPERTY'          =>  _tr('Property'),
             'DIALOG_STANDARD_LBL_VALUE'             =>  _tr('Value'),
+            'DIALOG_STANDARD_LBL_ACTIONS'           =>  _tr('Actions'),
             'DIALOG_STANDARD_LBL_REGISTERED_AT'     =>  _tr('Registered at'),
             'DIALOG_STANDARD_TOOLTIP_REGISTERED'    =>  _tr('This account is in use by an unsupported/unscanned host'),
+            'DIALOG_STANDARD_LBL_UNIMPLEMENTED'     =>  _tr('(unimplemented in DB)'),
+            'DIALOG_STANDARD_LBL_REQUIRED_FIELD'    =>  _tr('Required field'),
         ));
     	return $smarty->fetch("$local_templates_dir/../../dialogs/standard/tpl/dialog.tpl");
     }
@@ -88,12 +91,14 @@ class Dialog_Standard
         );
         
         // Validar ID de endpoint y cargar detalles
-        if (!isset($_REQUEST['id_endpoint']) || !ctype_digit($_REQUEST['id_endpoint'])) {
+        $idEndpoint = isset($_REQUEST['id_endpoint']) && is_string($_REQUEST['id_endpoint'])
+            && ctype_digit($_REQUEST['id_endpoint']) ? $_REQUEST['id_endpoint'] : NULL;
+        if (is_null($idEndpoint)) {
         	$respuesta['status'] = 'error';
             $respuesta['message'] = _tr('Invalid endpoint ID');
         } else {
         	$endpoint = new EndpointManager_Standard();
-            $details = $endpoint->cargarDetalles($_REQUEST['id_endpoint']);
+            $details = $endpoint->cargarDetalles($idEndpoint);
             if (!is_array($details)) {
                 $respuesta['status'] = 'error';
                 $respuesta['message'] = $endpoint->getErrMsg();
@@ -117,12 +122,16 @@ class Dialog_Standard
         );
         
         // Validar ID de endpoint y cargar detalles
-        if (!isset($_REQUEST['id_endpoint']) || !ctype_digit($_REQUEST['id_endpoint'])) {
+        $idEndpoint = isset($_REQUEST['id_endpoint']) && is_string($_REQUEST['id_endpoint'])
+            && ctype_digit($_REQUEST['id_endpoint']) ? $_REQUEST['id_endpoint'] : NULL;
+        if (is_null($idEndpoint)) {
             $respuesta['status'] = 'error';
             $respuesta['message'] = _tr('Invalid endpoint ID');
         } else {
             $endpoint = new EndpointManager_Standard();
-            $sFechaModificacion = $endpoint->guardarDetalles($_REQUEST['id_endpoint'], $_REQUEST); 
+            $sFechaModificacion = $endpoint->guardarDetalles($idEndpoint, $_REQUEST);
+            $fieldErrors = $endpoint->getFieldErrors();
+            if (count($fieldErrors) > 0) $respuesta['errors'] = $fieldErrors;
             if (is_null($sFechaModificacion)) {
                 $respuesta['status'] = 'error';
                 $respuesta['message'] = $endpoint->getErrMsg();

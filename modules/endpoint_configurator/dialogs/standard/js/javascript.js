@@ -1,5 +1,18 @@
 endpointConfigDlgInit['standard'] = function() {
+	App.IssabelEndpointTextField = Ember.TextField.extend({
+		classNames: ['ember-text-field', 'form-control']
+	});
 	App.EndpointconfigStandardView = JQ.Tabs.extend({
+		didInsertElement: function() {
+			this._super();
+			var self = this;
+			this.$().on('input blur', 'input', function() {
+				var field = $(this).attr('id');
+				if (!field) return;
+				var details = self.get('controller.details');
+				if (details && details.validateField) details.validateField(field);
+			});
+		}
 	});
 	App.EndpointconfigStandardController = Ember.ObjectController.extend({
 		// Network configuration
@@ -13,25 +26,22 @@ endpointConfigDlgInit['standard'] = function() {
 		}.property('details.dhcp'),
 		setDHCP: function() {
 			this.set('details.dhcp', true);
+			var details = this.get('details');
+			Ember.run.scheduleOnce('afterRender', details, function() {
+				this.set('errors', {});
+				this.applyErrorClasses();
+			});
 		},
 		setStatic: function() {
 			this.set('details.dhcp', false);
-		}
-	});
-	
-	App.NetworkTypeView = JQ.ButtonSet.extend({
-		init: function() {
-			this._super();
-			/* Force dhcp to be requested as null so change to defined value is
-			 * noted in observer. */
-			this.get('controller.model.details.dhcp');
-		},
-		reapply: function() {
-			// Required to apply the changes after property is updated
-			Ember.run.scheduleOnce('afterRender', this, function() {
-				this.get('ui').buttonset('refresh');
+			var details = this.get('details');
+			Ember.run.scheduleOnce('afterRender', details, function() {
+				this.validate();
 			});
-		}.observes('controller.model.details.dhcp')
+		},
+		validateField: function(field) {
+			this.get('details').validateField(field);
+		}
 	});
 	
 	App.EndpointconfigPropertylistView = Ember.View.extend({
@@ -64,8 +74,7 @@ endpointConfigDlgInit['standard'] = function() {
 
 			if (newobj.key != '') {
 				if (this.get('blacklist').indexOf(newobj.key) != -1) {
-					// TODO: i18n
-					alert("Conflict with reserved property!");
+					alert(arrLang_main['CONFLICT_RESERVED_PROPERTY']);
 					return;
 				}
 				this.set('tempKey', '');
@@ -368,6 +377,7 @@ endpointConfigDlgInit['standard'] = function() {
 		static_dns2:		null,
 		endpoint_properties:null,
 		endpoint_account:	null,
+		errors:				null,
 		
 		endpointPropertiesController: null,
 		accountsController: null,
@@ -382,6 +392,8 @@ endpointConfigDlgInit['standard'] = function() {
 				this.set('endpoint_properties', new Array());
 			if (this.get('endpoint_account') == null)
 				this.set('endpoint_account', new Array());
+			if (this.get('errors') == null)
+				this.set('errors', {});
 			
 			//console.debug('details.init');
 			this.set('endpointPropertiesController', App.EndpointconfigPropertylistController.create({
@@ -420,6 +432,70 @@ endpointConfigDlgInit['standard'] = function() {
 		},
 		numaccounts: function () {
 			return this.endpoint_account.length;
+		},
+		validate: function () {
+			if (this.get('dhcp')) {
+				this.set('errors', {});
+				this.applyErrorClasses();
+				return true;
+			}
+			var fields = ['static_ip', 'static_mask', 'static_gw', 'static_dns1', 'static_dns2'];
+			for (var i = 0; i < fields.length; i++) this.validateField(fields[i]);
+			var errors = this.get('errors') || {};
+			return Object.keys(errors).length === 0;
+		},
+		validateField: function (field) {
+			var fields = ['static_ip', 'static_mask', 'static_gw', 'static_dns1', 'static_dns2'];
+			if (fields.indexOf(field) === -1) return;
+			var errors = {};
+			var current = this.get('errors') || {};
+			for (var k in current) if (current.hasOwnProperty(k)) errors[k] = current[k];
+			var labels = {
+				static_ip:		arrLang_main['LBL_IP'] || 'IP',
+				static_mask:	arrLang_main['LBL_NETWORK_MASK'] || 'Network mask',
+				static_gw:		arrLang_main['LBL_GATEWAY'] || 'Gateway',
+				static_dns1:	arrLang_main['LBL_PRIMARY_DNS'] || 'Primary DNS',
+				static_dns2:	arrLang_main['LBL_SECONDARY_DNS'] || 'Secondary DNS'
+			};
+			var required = (['static_ip', 'static_mask', 'static_dns1'].indexOf(field) !== -1);
+			var value = this.get(field);
+			var msg = null;
+			if (!this.get('dhcp')) {
+				// El servidor acepta DNS secundario sin primario e intercambia
+				// ambos; el cliente debe permitir el mismo caso.
+				var dnsSwapped = (field === 'static_dns1'
+					&& (value == null || value === '')
+					&& this.get('static_dns2') != null
+					&& this.get('static_dns2') !== '');
+				if (required && !dnsSwapped && (value == null || value === '')) {
+					msg = (arrLang_main['FIELD_REQUIRED'] || '%s is required').replace('%s', labels[field]);
+				} else if (value != null && value !== '' && !this.isValidIPv4(value)) {
+					msg = (arrLang_main['FIELD_INVALID'] || '%s is invalid').replace('%s', labels[field]);
+				}
+			}
+			if (msg) errors[field] = msg; else delete errors[field];
+			this.set('errors', errors);
+			this.applyErrorClasses();
+		},
+		isValidIPv4: function (value) {
+			return /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/.test(value);
+		},
+		applyErrorClasses: function () {
+			if (typeof jQuery === 'undefined') return;
+			var errors = this.get('errors') || {};
+			var map = {
+				static_ip:		'#static_ip',
+				static_mask:	'#static_mask',
+				static_gw:		'#static_gw',
+				static_dns1:	'#static_dns1',
+				static_dns2:	'#static_dns2'
+			};
+			for (var k in map) {
+				var $el = jQuery(map[k]);
+				if (!$el.length) continue;
+				$el.toggleClass('is-invalid', !!errors[k]);
+				$el.toggleClass('is-valid', !errors[k] && $el.val() !== '');
+			}
 		}
 	});
 	

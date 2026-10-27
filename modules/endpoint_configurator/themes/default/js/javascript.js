@@ -148,12 +148,18 @@ $(document).ready(function() {
 				mostrar_mensaje_error_dialog(respuesta.message);
 				return;
 			}
-			this.set('details', App.detailClass[this.get('detail_dialog')].create(respuesta.details));
+			var details = App.detailClass[this.get('detail_dialog')].create(respuesta.details);
+			details.set('errors', {});
+			this.set('details', details);
 		},
 		saveDetails: function()
 		{
 			var bExito = true;
-			var json = this.get('details').getjson();
+			var details = this.get('details');
+			if (!details.validate()) {
+				return false;
+			}
+			var json = details.getjson();
 			json['action'] = this.get('detail_dialog') + '_saveDetails';
 			json['id_endpoint'] = this.get('id_endpoint');
 			$.ajax({
@@ -163,11 +169,15 @@ $(document).ready(function() {
 				data:	json
 			}).done(function(respuesta) {
 				if (respuesta.status == 'error') {
+					details.set('errors', respuesta.errors || {});
+					details.applyErrorClasses();
 					mostrar_mensaje_error_dialog(respuesta.message);
 					bExito = false;
 				} else {
+					details.set('errors', {});
+					details.applyErrorClasses();
 					this.set('last_modified', respuesta.last_modified);
-					this.set('num_accounts', this.get('details').numaccounts());
+					this.set('num_accounts', details.numaccounts());
 				}
 			}.bind(this)).fail(function(jqXHR, textStatus, errorThrown) {
 				bExito = false;
@@ -331,6 +341,7 @@ $(document).ready(function() {
 		unsetInProgress: false,
 		configInProgress: false,
 		scanMask: null,
+		scanMaskError: null,
 		estadoClienteHash: null,
 		
 		completedsteps : 0,
@@ -365,16 +376,18 @@ $(document).ready(function() {
 		},
 		scanStart: function() {
 			var scanMask = this.get('scanMask');
-			var maskRegex = new RegExp("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}/\\d{1,2}$");
+			var maskRegex = new RegExp("^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)/(?:3[0-2]|[12]?\\d)$");
 			
 			if (this.evtSource != null || this.longPoll != null) {
 				mostrar_mensaje_error(arrLang_main['SCANCONFIG_INPROGRESS']);
 				return;
 			}
 			if (!maskRegex.test(scanMask)) {
+				this.set('scanMaskError', arrLang_main['INVALID_SCANMASK']);
 				mostrar_mensaje_error(arrLang_main['INVALID_SCANMASK']);
 				return;
 			}
+			this.set('scanMaskError', null);
 			this.set('scanInProgress', true);
 			$.post('index.php?menu=' + module_name + '&rawmode=yes', {
 				menu:		module_name, 
@@ -385,9 +398,12 @@ $(document).ready(function() {
 			function(respuesta) {
 				if (respuesta.status == 'error') {
 					this.set('scanInProgress', false);
+					this.set('scanMaskError', respuesta.errors && respuesta.errors.scanMask
+						? respuesta.errors.scanMask : null);
 					mostrar_mensaje_error(respuesta.message);
 					return;
 				}
+				this.set('scanMaskError', null);
 				this.set('estadoClienteHash', respuesta.estadoClienteHash);
 				setTimeout(this.scanStatus.bind(this), 1);
 			}.bind(this));
@@ -593,14 +609,22 @@ $(document).ready(function() {
 
 	App.NetmaskView = Ember.TextField.extend({
 		attributeBindings: ['style'],
-		style: "height:22px; width: 120px",
+		classNameBindings: ['controller.scanMaskError:is-invalid'],
+		classNames: ['ember-text-field', 'form-control', 'iss-endpointconfig-netmask'],
+		style: "height:22px; width: 150px",
 		maxlength: 18,
-		pattern: "^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}/\\d{1,2}$"
+		pattern: "^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)/(?:3[0-2]|[12]?\\d)$",
+		valueChanged: function() {
+			var controller = this.get('controller');
+			if (controller && controller.get('scanMaskError')) {
+				controller.set('scanMaskError', null);
+			}
+		}.observes('value')
 	});
 	
 	App.NeoNavigationView = Ember.View.extend({
 		templateName: 'neo-navigation',
-		classNames: ['neo-endpointconfig-header-row-navigation']
+		classNames: ['neo-endpointconfig-header-row-navigation', 'iss-grid__nav']
 	});
 	App.ConfigProgressView = JQ.ProgressBar.extend({
 	});
@@ -718,6 +742,10 @@ $(document).ready(function() {
 		forceroot: '#endpointConfigApplication',
         buttons: [
             {
+                text: arrLang_main['LBL_DISMISS'],
+                click: function() { $(this).dialog('close');  }
+            },
+            {
                 text: arrLang_main['LBL_APPLY'],
                 click: function() {
                 	var thisview = Ember.View.views[$(this).attr('id')];
@@ -726,10 +754,6 @@ $(document).ready(function() {
                 		$(this).dialog('close');
                 	}
                 }
-            },
-            {
-                text: arrLang_main['LBL_DISMISS'],
-                click: function() { $(this).dialog('close');  }
             }
         ],
         close: function (event, ui) {
@@ -758,7 +782,8 @@ $(document).ready(function() {
 	});
 	App.FullTextArea = Ember.TextArea.extend({
 		attributeBindings: ['style'],
-		style:  "width: 100%; height: 100%; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-family: \"Courier New\", Courier, monospace;"
+		classNames: ['ember-text-area', 'form-control', 'iss-endpointconfig-log'],
+		style:  "width: 100%; height: 100%; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;"
 	});
 	App.SubMenuView = Ember.View.extend({
 		attributeBindings: ['style'],
@@ -1002,6 +1027,7 @@ function initializeJQueryUIViews()
 	JQ.LiteUploader = Em.View.extend({
 		tagName: 'input',
 		attributeBindings: ['type', 'name'],
+		classNames: ['form-control'],
 		type: 'file',
 		didInsertElement: function() {
 			var options = {};
@@ -1059,6 +1085,23 @@ function mostrar_mensaje_info(s)
 
 function mostrar_mensaje_error_dialog(s)
 {
+	// El dialogo de jQuery UI se mueve al body, fuera del contenedor del
+	// modulo. Se muestra el aviso dentro del dialogo visible para que no quede
+	// tapado por el modal; si no hay dialogo abierto, se usa el aviso de pagina.
+	var $dialog = $('.ui-dialog:visible').last();
+	if ($dialog.length) {
+		var $box = $dialog.find('.iss-dialog-error').first();
+		if (!$box.length) {
+			$box = $('<div class="iss-alert iss-alert--error iss-dialog-error" role="alert">' +
+				'<div class="iss-alert__content"></div></div>');
+			$box.insertAfter($dialog.find('.ui-dialog-titlebar').first());
+		}
+		$box.find('.iss-alert__content').text(s);
+		$box.show('slow', 'linear', function() {
+			setTimeout(function() { $box.fadeOut(); }, 10000);
+		});
+		return;
+	}
 	$('#issabel-module-error-message-text-dialog').text(s);
 	$('#issabel-module-error-message-dialog').show('slow', 'linear', function() {
 		setTimeout(function() {

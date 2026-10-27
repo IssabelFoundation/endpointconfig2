@@ -21,7 +21,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: paloEndpointScanStatus.class.php, Sun 08 Oct 2023 06:01:26 PM EDT, nicolas@issabel.com
+  $Id: issabelEndpointScanStatus.class.php, Sun 08 Oct 2023 06:01:26 PM EDT, nicolas@issabel.com
 */
 
 /*
@@ -35,7 +35,7 @@
  *  scanSocket  =>  ruta completa al socket Unix de control del escaneo, si el
  *                  escaneo está activo, o NULL si inactivo o terminado.
  */
-class paloEndpointScanStatus extends paloInterfaceSSE
+class issabelEndpointScanStatus extends issabelInterfaceSSE
 {
     private $_scanSockPath = NULL;
     private $_scanSock = NULL;

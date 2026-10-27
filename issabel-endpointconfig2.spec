@@ -3,7 +3,7 @@
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
 Version: 6.0.0
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
@@ -158,6 +158,19 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Mon Oct 26 2026 Issabel Foundation <info@issabel.org> - 6.0.0-6
+- Add the CSRF token to the legacy upload form and declare the module's
+  read-only GET actions, so downloads and SSE progress work with CSRF enforce.
+- Complete the language catalogue (es/fa/ru/uk and the standard dialog) and
+  move the remaining hardcoded labels into the language files.
+- Validate the scan mask and the static network fields per field on the client
+  and return field-level errors from the server without changing the JSON
+  contract.
+- Align the endpoint grid and configuration dialog with the theme primitives
+  (iss-grid, iss-table, iss-form, iss-card, iss-alert) and theme colour tokens.
+- Harden PHP 8 runtime paths (session keys, request types, /usr/sbin/ip) and
+  rename the SSE helper classes to the issabel prefix.
+
 * Mon Oct 26 2026 Issabel Foundation <info@issabel.org> - 6.0.0-5
 - Bump the release so upgrades re-run %post against the new issabel-dbprocess,
   which installs the endpointconfig database from the schema when it is missing
