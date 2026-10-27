@@ -34,8 +34,9 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
-import urllib3
-from eventlet.green import socket
+import urllib.request
+import urllib.error
+import socket
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -98,13 +99,13 @@ class Endpoint(BaseEndpoint):
         try:
             # Open connection to execute resync.
             # TODO: what, no authentication?
-            r = urllib3.urlopen('http://' + self._ip + '/admin/resync?' + self._serverip + '/' + sConfigFile)
+            r = urllib.request.urlopen('http://' + self._ip + '/admin/resync?' + self._serverip + '/' + sConfigFile)
             r.read()
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s got HTTP Error - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False

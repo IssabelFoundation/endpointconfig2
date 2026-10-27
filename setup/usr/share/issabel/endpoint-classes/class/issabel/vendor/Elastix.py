@@ -28,9 +28,11 @@
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Grandstream
-import urllib3
-from eventlet.green import socket, urllib
-from eventlet.green.urllib.parse import urlencode
+import urllib.request
+import urllib.error
+import socket
+import urllib.parse
+from urllib.parse import urlencode
 import http.cookiejar
 import re
 import time
@@ -47,9 +49,9 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             entered on non-Grandstream models (LXP-180) '''
         sModel = None
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/')
+            response = urllib.request.urlopen('http://' + self._ip + '/')
             htmlbody = response.read()
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Base station"', e.headers['WWW-Authenticate'])
                 if m != None:
@@ -57,12 +59,12 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         except Exception as e:
             pass
 
-        if  sModel == None and 'fcgi/do?id=1' in htmlbody:
+        if  sModel == None and b'fcgi/do?id=1' in htmlbody:
             # This condition means we got an LXP150 or LXP250
             try:
                 opener, body = self._getAuthOpener_LXP150('admin', 'admin')
                 if not opener is None:
-                    m = re.search(r"id=hcProductName type=hidden value='(.+?)'", body)
+                    m = re.search(r"id=hcProductName type=hidden value='(.+?)'", body.decode('utf-8', 'replace'))
                     if m != None:
                         if m.group(1) == 'SP-R50':
                             sModel = 'LXP150'
@@ -214,7 +216,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         '''
         postdata = []
         for tuple in postvars:
-            postdata.append(urllib.quote_plus(tuple[0]) + '=' + urllib.quote_plus(str(tuple[1])))
+            postdata.append(urllib.parse.quote_plus(tuple[0]) + '=' + urllib.parse.quote_plus(str(tuple[1])))
         return self._doAuthPost(urlpath, '&'.join(postdata))
 
     def _getAuthOpener_LXP150(self, http_user, http_pass):
@@ -237,13 +239,13 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             '/', False, False, str((int)(time.time() + 3600)),
             False, 'SessionId', None, None)        
         cookiejar.set_cookie(sesscookie)
-        opener = urllib3.build_opener(urllib3.HTTPCookieProcessor(cookiejar))
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
         response = opener.open('http://' + self._ip + '/fcgi/do?' + urlencode({
             'action': 'Encrypt',
             'UserName' : http_user,
             'Password' : http_pass}))
         body = response.read()
-        m = re.search(r"id=hcSingleResult type=hidden value='(.+?)'", body)
+        m = re.search(r"id=hcSingleResult type=hidden value='(.+?)'", body.decode('utf-8', 'replace'))
         if m is None:
             return (None, None)
         encrypted_password = m.group(1)
@@ -261,7 +263,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         
         # Find new SessionId value. What, no Set-Cookie header?
         body = response.read()
-        m = re.search(r"id=hcSessionIdNow type=hidden value='(.+?)'", body)
+        m = re.search(r"id=hcSessionIdNow type=hidden value='(.+?)'", body.decode('utf-8', 'replace'))
         if m != None:
             sesscookie = http.cookiejar.Cookie(None, 'SessionId', m.group(1), None, False,
                 self._ip, False, False,
@@ -320,7 +322,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                 cfgcontent + '\r\n' +\
                 '--' + boundary + '--\r\n'
             
-            request = urllib3.Request(
+            request = urllib.request.Request(
                 'http://' + self._ip + '/fcgi/do?id=6&id=2',
                 postdata,
                 {'Content-Type': ' multipart/form-data; boundary=' + boundary})
@@ -334,7 +336,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
                 socket.setdefaulttimeout(oldtimeout)
 
             body = response.read()
-            if not 'reboot' in body.lower():
+            if not b'reboot' in body.lower():
                 logging.error('Endpoint %s@%s failed to maintain authentication (POST)' %
                         (self._vendorname, self._ip))
                 os.remove(sConfigPath)
@@ -343,7 +345,7 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
             logging.error('Endpoint %s@%s failed to connect - %s' %
                     (self._vendorname, self._ip, str(e)))
             return False
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s unable to send file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False

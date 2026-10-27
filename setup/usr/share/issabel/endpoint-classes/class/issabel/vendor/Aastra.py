@@ -28,11 +28,13 @@
 import logging
 import re
 import issabel.BaseEndpoint
-import urllib3
+import urllib.request
+import urllib.error
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import urllib, socket
+import urllib.parse
+import socket
 import http.client
-from eventlet.green.urllib.parse import urlencode
+from urllib.parse import urlencode
 import base64
 
 class Endpoint(BaseEndpoint):
@@ -64,8 +66,8 @@ class Endpoint(BaseEndpoint):
         sModel = None
         try:
             # Do not expect this to succeed. Only interested in exception.
-            urllib3.urlopen('http://' + self._ip + '/')
-        except urllib3.HTTPError as e:
+            urllib.request.urlopen('http://' + self._ip + '/')
+        except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Aastra (.+)"', e.headers['WWW-Authenticate'])
                 if m != None:
@@ -73,11 +75,11 @@ class Endpoint(BaseEndpoint):
                 else:
                     self._http_username = 'admin'
                     self._http_password = '22222'
-                    password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
+                    password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
                     password_manager.add_password(None, 'http://' + self._ip + '/',
                         self._http_username, self._http_password)
-                    basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
-                    opener = urllib3.build_opener(basic_auth_handler)
+                    basic_auth_handler = urllib.request.HTTPBasicAuthHandler(password_manager)
+                    opener = urllib.request.build_opener(basic_auth_handler)
                     try:
                         response = opener.open('http://' + self._ip + '/sysinfo.html')
                         htmlbody = response.read()
@@ -85,7 +87,7 @@ class Endpoint(BaseEndpoint):
                         #    <TD style="BORDER-BOTTOM: 1px dashed">Platform</TD>
                         #    <TD style="BORDER-BOTTOM: 1px dashed">9112i Revision 0</TD></TR>
                         #  <TR>
-                        m = re.search(r'Platform</TD>.*?<TD.*?>(\w+)', htmlbody, re.IGNORECASE | re.DOTALL)
+                        m = re.search(r'Platform</TD>.*?<TD.*?>(\w+)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE | re.DOTALL)
                         if m != None:
                             sModel = m.group(1)
                     except Exception as e:
@@ -218,7 +220,7 @@ class Endpoint(BaseEndpoint):
                 logging.error('Endpoint %s@%s failed to post configuration - %s' %
                     (self._vendorname, self._ip, r))
                 return False
-            if not 'Provisioning complete' in htmlbody:
+            if not b'Provisioning complete' in htmlbody:
                 logging.error('Endpoint %s@%s failed to set configuration server - not provisioned' %
                     (self._vendorname, self._ip))
                 return False            

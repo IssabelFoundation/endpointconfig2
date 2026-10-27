@@ -28,9 +28,8 @@
 import logging
 import re
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-from eventlet.green import socket
-telnetlib = eventlet.import_patched('telnetlib')
+import socket
+from issabel.telnetclient import Telnet
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -57,7 +56,7 @@ class Endpoint(BaseEndpoint):
         the phone configuration file is at /phone/etc/main.cfg
         '''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:

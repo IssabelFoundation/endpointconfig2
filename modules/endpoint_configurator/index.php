@@ -32,8 +32,8 @@ function _moduleContent(&$smarty, $module_name)
 {
     require_once "modules/$module_name/configs/default.conf.php";
     require_once "modules/$module_name/libs/paloSantoEndpoints.class.php";
-    require_once "modules/$module_name/libs/paloInterfaceSSE.class.php";
-    require_once "modules/$module_name/libs/paloServerSentEvents.class.php";
+    require_once "modules/$module_name/libs/issabelInterfaceSSE.class.php";
+    require_once "modules/$module_name/libs/issabelServerSentEvents.class.php";
     
     load_language_module($module_name);
 
@@ -104,7 +104,11 @@ function handleHTML_mainReport($smarty, $module_name, $local_templates_dir, $dlg
         'icon'                      =>  'modules/'.$module_name.'/images/pbx_endpoint_configurator.png',
         'showing'                   =>  _tr('Showing'),
         'of'                        =>  _tr('of'),
-        
+        'lblStart'                  =>  _tr('First page'),
+        'lblPrevious'               =>  _tr('Previous'),
+        'lblNext'                   =>  _tr('Next'),
+        'lblEnd'                    =>  _tr('Last page'),
+
         'LBL_CANCEL'                =>  _tr('Cancel'),
         'LBL_SCAN'                  =>  _tr('Scan network for endpoints'),
         'LBL_STEP'                  =>  _tr('Step'),
@@ -128,6 +132,9 @@ function handleHTML_mainReport($smarty, $module_name, $local_templates_dir, $dlg
         'TOOLTIP_HAS_EXTENSIONS'    =>  _tr('This endpoint has at least one account assigned'),
         'TOOLTIP_MISSING'           =>  _tr('This endpoint was previously detected but is missing from the latest scan'),
         'LBL_UNKNOWN'               =>  _tr('(unknown)'),
+        'LBL_WITH_ERRORS'           =>  _tr('(with errors)'),
+        'LBL_SELECT_ALL'            =>  _tr('Select all'),
+        'LBL_SELECT_ENDPOINT'       =>  _tr('Select endpoint'),
         'MSG_NO_ENDPOINTS'          =>  _tr('No endpoints have been discovered or loaded.'),
         'ARRLANG_MAIN'              =>  $json->encode(array(
             'SCANCONFIG_INPROGRESS' =>  _tr('Cannot scan while scanning/configuration is in progress.'),
@@ -139,6 +146,14 @@ function handleHTML_mainReport($smarty, $module_name, $local_templates_dir, $dlg
             'CONFIGURATION_SUCCESS' =>  _tr('All endpoints were successfully configured'),
             'LBL_APPLY'             =>  _tr('Apply'),
             'LBL_DISMISS'           =>  _tr('Dismiss'),
+            'CONFLICT_RESERVED_PROPERTY' => _tr('Conflict with reserved property!'),
+            'FIELD_REQUIRED'        =>  _tr('%s is required'),
+            'FIELD_INVALID'         =>  _tr('%s is invalid'),
+            'LBL_IP'                =>  _tr('IP'),
+            'LBL_NETWORK_MASK'      =>  _tr('Network mask'),
+            'LBL_GATEWAY'           =>  _tr('Gateway'),
+            'LBL_PRIMARY_DNS'       =>  _tr('Primary DNS'),
+            'LBL_SECONDARY_DNS'     =>  _tr('Secondary DNS'),
         )),
     ));
     $c = $smarty->fetch($local_templates_dir.'/reporte_endpoints.tpl');
@@ -194,14 +209,14 @@ function handleJSON_loadStatus($smarty, $module_name, $local_templates_dir, $dlg
     );
     
 	$respuesta['scanMask'] = network();
-    $respuesta['scanInProgress'] = (
-        !is_null($_SESSION[$module_name]['estadoCliente']) &&
-        !is_null($_SESSION[$module_name]['estadoCliente']['scanSocket']));
-    $respuesta['configInProgress'] = (
-        !is_null($_SESSION[$module_name]['estadoCliente']) &&
-        !is_null($_SESSION[$module_name]['estadoCliente']['configLog']));
-    $respuesta['estadoClienteHash'] = ($respuesta['scanInProgress'] || $respuesta['configInProgress']) ?
-        $_SESSION[$module_name]['estadoClienteHash'] : NULL; 
+    $estadoCliente = isset($_SESSION[$module_name]['estadoCliente'])
+        && is_array($_SESSION[$module_name]['estadoCliente'])
+        ? $_SESSION[$module_name]['estadoCliente'] : array();
+    $respuesta['scanInProgress'] = !empty($estadoCliente['scanSocket']);
+    $respuesta['configInProgress'] = !empty($estadoCliente['configLog']);
+    $respuesta['estadoClienteHash'] = ($respuesta['scanInProgress'] || $respuesta['configInProgress'])
+        && isset($_SESSION[$module_name]['estadoClienteHash'])
+        ? $_SESSION[$module_name]['estadoClienteHash'] : NULL;
     $json = new Services_JSON();
     Header('Content-Type: application/json');
     return $json->encode($respuesta);
@@ -227,7 +242,7 @@ function handleJSON_loadEndpoints($smarty, $module_name, $local_templates_dir, $
         }
     }
     
-    paloServerSentEvents::generarEstadoHash($module_name, array(
+    issabelServerSentEvents::generarEstadoHash($module_name, array(
         'endpoints'     =>  isset($_SESSION[$module_name]['estadoCliente']['endpoints']) 
             ? $_SESSION[$module_name]['estadoCliente']['endpoints'] : NULL,
         'scanSocket'    =>  isset($_SESSION[$module_name]['estadoCliente']['scanSocket']) 
@@ -257,7 +272,8 @@ function handleJSON_scanStart($smarty, $module_name, $local_templates_dir, $dlgl
         $respuesta['message'] = _tr('There is an endpoint configuration in progress');
     } else {
         // Validar la máscara de red para escaneo de red
-        $scanMask = isset($_REQUEST['scanMask']) ? $_REQUEST['scanMask'] : '';
+        $scanMask = isset($_REQUEST['scanMask']) && is_string($_REQUEST['scanMask'])
+            ? $_REQUEST['scanMask'] : '';
         $pValidator = new PaloValidar();
         if (!$pValidator->validar('scanMask', $scanMask, 'ip/mask')){
             $strErrorMsg = "";
@@ -268,6 +284,9 @@ function handleJSON_scanStart($smarty, $module_name, $local_templates_dir, $dlgl
             }
             $respuesta['status'] = 'error';
             $respuesta['message'] = _tr('Invalid Format in Parameter').': '.$strErrorMsg;
+            $respuesta['errors'] = array(
+                'scanMask' => sprintf(_tr('%s is invalid'), _tr('Network scan mask')),
+            );
         } else {
             // Cargar los endpoints desde la base de datos
             $oEndpoints = new paloSantoEndpoints();
@@ -282,7 +301,7 @@ function handleJSON_scanStart($smarty, $module_name, $local_templates_dir, $dlgl
                     $respuesta['status'] = 'error';
                     $respuesta['message'] = $oEndpoints->getErrMsg();
                 }
-                $respuesta['estadoClienteHash'] = paloServerSentEvents::generarEstadoHash($module_name, array(
+                $respuesta['estadoClienteHash'] = issabelServerSentEvents::generarEstadoHash($module_name, array(
                     'endpoints'     =>  $listaEndpoints,
                     'scanSocket'    =>  $sockFile,
                 ));
@@ -303,12 +322,14 @@ function handleJSON_scanCancel($smarty, $module_name, $local_templates_dir, $dlg
         'message'   =>  '(no message)',
     );
 
-    if (is_null($_SESSION[$module_name]['estadoCliente']['scanSocket'])) {
+    $scanSocket = isset($_SESSION[$module_name]['estadoCliente']['scanSocket'])
+        ? $_SESSION[$module_name]['estadoCliente']['scanSocket'] : NULL;
+    if (is_null($scanSocket)) {
     	$respuesta['status'] = 'error';
         $respuesta['message'] = _tr('There is no network scan in progress.');
     } else {
         $oEndpoints = new paloSantoEndpoints();
-        if (!$oEndpoints->cancelarScanRed($_SESSION[$module_name]['estadoCliente']['scanSocket'])) {
+        if (!$oEndpoints->cancelarScanRed($scanSocket)) {
             $respuesta['status'] = 'error';
             $respuesta['message'] = $oEndpoints->getErrMsg();
         }
@@ -321,10 +342,10 @@ function handleJSON_scanCancel($smarty, $module_name, $local_templates_dir, $dlg
 
 function handleJSON_scanStatus($smarty, $module_name, $local_templates_dir, $dlglist)
 {
-    require_once "modules/$module_name/libs/paloEndpointScanStatus.class.php";
+    require_once "modules/$module_name/libs/issabelEndpointScanStatus.class.php";
 
-	$paloSSE = new paloServerSentEvents($module_name, 'paloEndpointScanStatus');
-    $paloSSE->handle();
+	$sse = new issabelServerSentEvents($module_name, 'issabelEndpointScanStatus');
+    $sse->handle();
     return '';
 }
 
@@ -337,16 +358,20 @@ function handleJSON_setEndpointModel($smarty, $module_name, $local_templates_dir
     );
 
     $oEndpoints = new paloSantoEndpoints();
-	if (!isset($_REQUEST['id_endpoint']) || !ctype_digit($_REQUEST['id_endpoint'])) {
+    $idEndpoint = isset($_REQUEST['id_endpoint']) && is_string($_REQUEST['id_endpoint'])
+        && ctype_digit($_REQUEST['id_endpoint']) ? $_REQUEST['id_endpoint'] : NULL;
+    $idModel = isset($_REQUEST['id_model']) && is_string($_REQUEST['id_model'])
+        ? $_REQUEST['id_model'] : NULL;
+	if (is_null($idEndpoint)) {
 		$respuesta['status'] = 'error';
         $respuesta['message'] = _tr('Invalid endpoint ID');
-	} elseif (!isset($_REQUEST['id_model']) || !(ctype_digit($_REQUEST['id_model']) || $_REQUEST['id_model'] == 'unknown')) {
+	} elseif (is_null($idModel) || !(ctype_digit($idModel) || $idModel == 'unknown')) {
         $respuesta['status'] = 'error';
         $respuesta['message'] = _tr('Invalid model ID');
     } else {
     	$r = $oEndpoints->asignarModeloEndpoint(
-            (int)$_REQUEST['id_endpoint'],
-            (($_REQUEST['id_model'] == 'unknown') ? NULL : (int)$_REQUEST['id_model']));
+            (int)$idEndpoint,
+            (($idModel == 'unknown') ? NULL : (int)$idModel));
         if (is_null($r)) {
             $respuesta['status'] = 'error';
             $respuesta['message'] = $oEndpoints->getErrMsg();
@@ -390,12 +415,13 @@ function handleJSON_forgetSelected($smarty, $module_name, $local_templates_dir, 
         'message'   =>  '(no message)',
     );
 
-    if (!isset($_REQUEST['selection']) || !is_array($_REQUEST['selection']) || count($_REQUEST['selection']) <= 0) {
+    $selection = issabelSanitizeEndpointSelection(isset($_REQUEST['selection']) ? $_REQUEST['selection'] : NULL);
+    if (count($selection) <= 0) {
         $respuesta['status'] = 'error';
         $respuesta['message'] = _tr('Invalid or empty selection');
     } else {
         $oEndpoints = new paloSantoEndpoints();
-        if (!$oEndpoints->olvidarSeleccionEndpoints($_REQUEST['selection'])) {
+        if (!$oEndpoints->olvidarSeleccionEndpoints($selection)) {
             $respuesta['status'] = 'error';
             $respuesta['message'] = $oEndpoints->getErrMsg();
         }
@@ -413,7 +439,8 @@ function handleJSON_configStart($smarty, $module_name, $local_templates_dir, $dl
         'message'   =>  '(no message)',
     );
 
-	if (!isset($_REQUEST['selection']) || !is_array($_REQUEST['selection']) || count($_REQUEST['selection']) <= 0) {
+    $selection = issabelSanitizeEndpointSelection(isset($_REQUEST['selection']) ? $_REQUEST['selection'] : NULL);
+	if (count($selection) <= 0) {
         $respuesta['status'] = 'error';
         $respuesta['message'] = _tr('Invalid or empty selection');
     } elseif (isset($_SESSION[$module_name]['estadoCliente']['scanSocket'])) {
@@ -430,12 +457,12 @@ function handleJSON_configStart($smarty, $module_name, $local_templates_dir, $dl
             $respuesta['status'] = 'error';
             $respuesta['message'] = $oEndpoints->getErrMsg();
         } else {
-            $logfile = $oEndpoints->iniciarConfiguracionEndpoints($_REQUEST['selection']);
+            $logfile = $oEndpoints->iniciarConfiguracionEndpoints($selection);
             if (is_null($logfile)) {
                 $respuesta['status'] = 'error';
                 $respuesta['message'] = $oEndpoints->getErrMsg();
             } else {
-                $respuesta['estadoClienteHash'] = paloServerSentEvents::generarEstadoHash($module_name, array(
+                $respuesta['estadoClienteHash'] = issabelServerSentEvents::generarEstadoHash($module_name, array(
                     'endpoints' =>  $listaEndpoints,
                     'configLog' =>  $logfile,
                     'logOffset' =>  0,
@@ -452,10 +479,10 @@ function handleJSON_configStart($smarty, $module_name, $local_templates_dir, $dl
 
 function handleJSON_configStatus($smarty, $module_name, $local_templates_dir, $dlglist)
 {
-    require_once "modules/$module_name/libs/paloEndpointConfigStatus.class.php";
+    require_once "modules/$module_name/libs/issabelEndpointConfigStatus.class.php";
 
-    $paloSSE = new paloServerSentEvents($module_name, 'paloEndpointConfigStatus');
-    $paloSSE->handle();
+    $sse = new issabelServerSentEvents($module_name, 'issabelEndpointConfigStatus');
+    $sse->handle();
     return '';
 }
 
@@ -491,7 +518,8 @@ function handleJSON_download($smarty, $module_name, $local_templates_dir, $dlgli
     if (!is_array($listaEndpoints)) {
         return $oEndpoints->getErrMsg();
     }
-    $format = isset($_REQUEST['format']) ? $_REQUEST['format'] : 'legacy';
+    $format = isset($_REQUEST['format']) && is_string($_REQUEST['format'])
+        ? $_REQUEST['format'] : 'legacy';
     if (!preg_match('/^\w+$/', $format)) $format = 'legacy';
 
     // Identificar la clase que maneja el formato 
@@ -512,12 +540,15 @@ function handleJSON_upload($smarty, $module_name, $local_templates_dir, $dlglist
     
     // ¿Cuál es el formato del archivo que se ha subido?
     $loader = NULL;
-    if (!isset($_FILES['endpointfile']) || $_FILES['endpointfile']['size'][0] <= 0) {
+    $upload = isset($_FILES['endpointfile']) && is_array($_FILES['endpointfile'])
+        ? $_FILES['endpointfile'] : NULL;
+    if (is_null($upload) || !isset($upload['size'][0]) || $upload['size'][0] <= 0) {
     	$sMensajeError = _tr('No file uploaded');
-    } elseif ($_FILES['endpointfile']['error'][0] != UPLOAD_ERR_OK) {
+    } elseif (!isset($upload['error'][0]) || $upload['error'][0] != UPLOAD_ERR_OK
+        || !isset($upload['tmp_name'][0])) {
     	$sMensajeError = _tr('Failed to upload file');
     } else {
-        $sTmpFile = $_FILES['endpointfile']['tmp_name'][0];
+        $sTmpFile = $upload['tmp_name'][0];
         foreach (glob("modules/{$module_name}/libs/EndpointFile_*.class.php") as $classfile) {
         	require_once $classfile;
             $classname = basename($classfile, '.class.php');
@@ -576,6 +607,16 @@ function handleJSON_upload($smarty, $module_name, $local_templates_dir, $dlglist
     }
 }
 
+function issabelSanitizeEndpointSelection($selection)
+{
+    $ids = array();
+    if (!is_array($selection)) return $ids;
+    foreach ($selection as $id) {
+        if (is_scalar($id) && ctype_digit((string)$id)) $ids[] = (int)$id;
+    }
+    return $ids;
+}
+
 function network()
 {
     /* OJO: paloNetwork::getNetAdress() ha sido reescrito y es ahora una función
@@ -583,7 +624,7 @@ function network()
      * estático, NO PARCHE AQUí. En su lugar, actualice a 
      * issabel-system-2.3.0-10 o superior. El spec de issabel-pbx ya tiene este
      * requerimiento mínimo. */
-    $ip = $_SERVER['SERVER_ADDR'];
+    $ip = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '127.0.0.1';
     $total = subMask($ip);
     return paloNetwork::getNetAdress($ip, $total)."/".$total;    
 }
@@ -591,7 +632,7 @@ function network()
 function subMask($ip)
 {
     $output = NULL;
-    exec('/sbin/ip addr', $output);
+    exec('/usr/sbin/ip addr', $output);
     /*
     [root@picosam ~]# ip addr show
     1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN 
@@ -616,7 +657,8 @@ function subMask($ip)
 
 function modificarReferenciasLibreriasJS($smarty, $module_name, $dlglist)
 {
-    $listaLibsJS_modulo = explode("\n", $smarty->get_template_vars('HEADER_MODULES'));
+    $headerModules = $smarty->get_template_vars('HEADER_MODULES');
+    $listaLibsJS_modulo = explode("\n", is_string($headerModules) ? $headerModules : '');
 
     /* Se busca la referencia a jQuery (se asume que sólo hay una biblioteca que
      * empieza con "jquery-") y se la quita. Las referencias a Ember.js y 

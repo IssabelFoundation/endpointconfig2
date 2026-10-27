@@ -31,8 +31,8 @@ import os.path
 import re
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-telnetlib = eventlet.import_patched('telnetlib')
+import urllib.request
+from issabel.telnetclient import Telnet
 
 
 class Endpoint(BaseEndpoint):
@@ -80,7 +80,7 @@ class Endpoint(BaseEndpoint):
         '''Probe specific model of the Cisco phone using telnet'''
         sModel = None
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         
@@ -113,11 +113,11 @@ class Endpoint(BaseEndpoint):
         '''Probe specific model of the Cisco phone from its web page'''
         sModel = None
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/')
+            response = urllib.request.urlopen('http://' + self._ip + '/')
             htmlbody = response.read()
 
             # Search for the text that contains the Cisco phone model
-            model_match = re.search(r'IP Phone CP-(\w+)', htmlbody, re.IGNORECASE)
+            model_match = re.search(r'IP Phone CP-(\w+)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
 
             if model_match:
                 sModel = model_match.group(1)
@@ -228,7 +228,7 @@ class Endpoint(BaseEndpoint):
     def _rebootbytelnet(self):
         '''Start reboot of Cisco phone by telnet'''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -243,7 +243,7 @@ class Endpoint(BaseEndpoint):
         try:
             # Attempt login with default credentials
             telnet.read_until('Password :', 10)
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')            
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')            
             
             idx, m, text = telnet.expect([r'Password :', r'> '], 10)
             if idx == 0:

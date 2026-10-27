@@ -29,8 +29,7 @@ import logging
 from issabel.BaseEndpoint import BaseEndpoint
 import issabel.vendor.Grandstream
 import re
-import urllib3
-import eventlet
+import urllib.request
 
 class Endpoint(issabel.vendor.Grandstream.Endpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -47,18 +46,18 @@ class Endpoint(issabel.vendor.Grandstream.Endpoint):
         sModel = None
         # Try detecting Hanlong with updated firmware
         try:
-            password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
+            password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(None, 'http://' + self._ip + '/',
                 'admin', 'admin')
-            basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
-            opener = urllib3.build_opener(basic_auth_handler)
+            basic_auth_handler = urllib.request.HTTPBasicAuthHandler(password_manager)
+            opener = urllib.request.build_opener(basic_auth_handler)
             response = opener.open('http://' + self._ip + '/')
             htmlbody = response.read()
             #  <TR>
             #  <td width="220"><script> document.write(jscs.product_type);</script></td>
             #  <td width="250">UC862</td>
             #  <TR>
-            m = m = re.search(r'product_type\);</script></TD>.*?<TD.*?>(\w+)', htmlbody, re.IGNORECASE | re.DOTALL)
+            m = m = re.search(r'product_type\);</script></TD>.*?<TD.*?>(\w+)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE | re.DOTALL)
             if m != None:
                 sModel = m.group(1)
         except Exception as e:

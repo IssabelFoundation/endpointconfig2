@@ -1,45 +1,24 @@
 %define modname endpointconfig2
 
-%if 0%{?rhel} == 7
- %define dist .el7
-%endif
-
-#%undefine __brp_mangle_shebangs
-
 Summary: Issabel Endpoint Configurator Module
 Name: issabel-endpointconfig2
-Version: 5.0.0
-Release: 1%{?dist}
+Version: 6.0.0
+Release: 6%{?dist}
 License: GPL
 Group:   Applications/System
 Source0: issabel-%{modname}-%{version}.tar.gz
-Patch0: centos8-endpointconfig.diff
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildArch: noarch
 Requires: issabel-framework >= 5.0.0-1
 Requires: issabel-agenda >= 4.0.0-1
-Requires: python-cjson
-Requires: php-simplepie
+Requires: epel-release
+Requires: issabel-php-simplepie
 Requires: nmap
 Requires: tftp-server
-
-%if 0%{?rhel} == 7
-Requires: pyst2-Asterisk
-Requires: MySQL-python
-Requires: python-paramiko >= 1.7.6-2
-Requires: python-tempita
-Requires: python-eventlet
-Requires: python-daemon
-Requires: pyOpenSSL
-%else
-Requires: py-Asterisk
 Requires: python3-mysqlclient
 Requires: python3-paramiko
 Requires: python3-tempita
-Requires: python3-eventlet
 Requires: python3-daemon
-Requires: python3-pyOpenSSL
-%endif
 
 Conflicts: elastix-pbx <= 2.4.0-15
 
@@ -80,10 +59,6 @@ For developers:
 %prep
 %setup -n %{name}-%{version}
 
-%if 0%{?rhel} == 8
-%patch0 -p0
-%endif
-
 %install
 rm -rf $RPM_BUILD_ROOT
 
@@ -97,6 +72,11 @@ mv setup/etc/httpd/ $RPM_BUILD_ROOT/etc/
 
 mv setup/usr/ $RPM_BUILD_ROOT/
 mkdir -p $RPM_BUILD_ROOT/usr/local/share/issabel/endpoint-classes/tpl
+
+# Los .tpl/.xml de plantillas y los datos de tftpboot/module_installer no son
+# scripts; el bit de ejecucion heredado del repo dispara brp-mangle-shebangs,
+# que falla con el "#!version:..." que abre las plantillas de Yealink.
+find $RPM_BUILD_ROOT \( -path '*/endpoint-classes/*' -o -path '*/tftpboot/*' -o -path '*/module_installer/*' \) -type f -exec chmod 644 {} +
 
 rm -rf setup/build/
 
@@ -118,7 +98,7 @@ mv menu.xml $RPM_BUILD_ROOT/usr/share/issabel/module_installer/%{name}-%{version
 mkdir -p /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/
 touch /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
 if [ $1 -eq 2 ]; then
-    rpm -q --queryformat='%{VERSION}-%{RELEASE}' %{name} > /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
+    rpm -q --queryformat='%%{VERSION}-%%{RELEASE}' %{name} > /usr/share/issabel/module_installer/%{name}-%{version}-%{release}/preversion_%{modname}.info
 fi
 
 
@@ -137,7 +117,7 @@ if [ $1 -eq 1 ]; then #install
     issabel-dbprocess "install" "$pathModule/setup/db"
 
   # Restart apache to disable HTTPS redirect on phonesrv script
-  /sbin/service httpd restart
+  /usr/sbin/service httpd restart
 elif [ $1 -eq 2 ]; then #update
     issabel-dbprocess "update"  "$pathModule/setup/db" "$preversion"
 fi
@@ -178,3 +158,28 @@ fi
 /usr/share/issabel/privileged/*
 
 %changelog
+* Mon Oct 26 2026 Issabel Foundation <info@issabel.org> - 6.0.0-6
+- Add the CSRF token to the legacy upload form and declare the module's
+  read-only GET actions, so downloads and SSE progress work with CSRF enforce.
+- Complete the language catalogue (es/fa/ru/uk and the standard dialog) and
+  move the remaining hardcoded labels into the language files.
+- Validate the scan mask and the static network fields per field on the client
+  and return field-level errors from the server without changing the JSON
+  contract.
+- Align the endpoint grid and configuration dialog with the theme primitives
+  (iss-grid, iss-table, iss-form, iss-card, iss-alert) and theme colour tokens.
+- Harden PHP 8 runtime paths (session keys, request types, /usr/sbin/ip) and
+  rename the SSE helper classes to the issabel prefix.
+
+* Mon Oct 26 2026 Issabel Foundation <info@issabel.org> - 6.0.0-5
+- Bump the release so upgrades re-run %post against the new issabel-dbprocess,
+  which installs the endpointconfig database from the schema when it is missing
+  instead of only emitting `USE endpointconfig;`. This heals installs where the
+  original %post was deferred to firstboot and the spool was never applied.
+
+* Fri Oct 16 2026 Issabel Foundation <info@issabel.org> - 6.0.0-4
+- Escape the rpm queryformat used to record the pre-version on upgrade.
+  The VERSION and RELEASE macros were expanded at build time, so %pre always
+  wrote the new version and issabel-dbprocess skipped every version_sql
+  migration. They are now escaped so rpm expands them at run time.
+

@@ -28,7 +28,7 @@
 import logging
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import os
+import os
 import errno
 
 class Endpoint(BaseEndpoint):
@@ -55,7 +55,7 @@ class Endpoint(BaseEndpoint):
         '''
         for sDir in ('/polycom/logs', '/polycom/overrides', '/polycom/contacts'):
             try:
-                os.makedirs(issabel.BaseEndpoint.TFTP_DIR + sDir, 0777)
+                os.makedirs(issabel.BaseEndpoint.TFTP_DIR + sDir, 0o777)
             except OSError as e:
                 # swallow "already exists", re-raise anything else
                 if e.errno != errno.EEXIST: 
@@ -143,7 +143,7 @@ class Endpoint(BaseEndpoint):
             try:
                 f = open(self._tftpdir + logpath, 'a')
                 f.close()
-                os.chmod(self._tftpdir + logpath, 0666)
+                os.chmod(self._tftpdir + logpath, 0o666)
             except IOError as e:
                 logging.error('Endpoint %s@%s failed to create logfile - %s' %
                     (self._vendorname, self._ip, str(e)))

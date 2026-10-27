@@ -28,13 +28,13 @@
 import logging
 import hashlib
 import re
-import requests
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-from eventlet.green import socket, urllib
+import socket
+import urllib.parse
 import http.client
-from eventlet.green.urllib.parse import urlencode
-telnetlib = eventlet.import_patched('telnetlib')
+from urllib.parse import urlencode
+from issabel.telnetclient import Telnet
+import http.cookiejar
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -59,7 +59,7 @@ class Endpoint(BaseEndpoint):
         '''
         telnet = None
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
         except socket.timeout as e:
@@ -152,7 +152,7 @@ class Endpoint(BaseEndpoint):
 
     def _updateLocalConfig_AT320(self):
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -167,8 +167,8 @@ class Endpoint(BaseEndpoint):
         try:
             # Attempt to login into admin telnet
             telnet.read_until('Password:', 10)
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or password prompt
             idx, m, text = telnet.expect([r'Password:', r'P:\\>'], 10)
@@ -299,7 +299,7 @@ class Endpoint(BaseEndpoint):
     def _transferConfig2Phone(self, sConfigFile):
         '''Transfer configuration file to Atcom phone (AT530 or later) '''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -314,9 +314,9 @@ class Endpoint(BaseEndpoint):
         # Attempt to login into admin telnet
         try:
             telnet.read_until('Login:', 10)
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
             #telnet.read_until('Password:')
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or login prompt
             idx, m, text = telnet.expect([r'Login:', r'# '], 10)
@@ -325,7 +325,7 @@ class Endpoint(BaseEndpoint):
                 logging.error('Endpoint %s@%s detected ACCESS DENIED on telnet connect')
                 return False
             else:
-                telnet.write('download tftp -ip ' + self._serverip.encode() + ' -file ' + sConfigFile.encode() + '\r\n')
+                telnet.write('download tftp -ip ' + self._serverip + ' -file ' + sConfigFile + '\r\n')
                 idx, m, text = telnet.expect([r'# '], 10)
                 if 'failed' in text:
                     logging.error('Endpoint %s@%s failed to retrieve new config' % (self._vendorname, self._ip))
@@ -390,10 +390,10 @@ class Endpoint(BaseEndpoint):
             myhttp.request('GET', noncesource, None, {'Connection' : 'keep-alive'})
             resp = myhttp.getresponse()
             htmlbody = resp.read().decode('utf-8')
-            session = requests.Session()
-            mcookie = session.cookies.get_dict()
-            response = session.get('http://' + self._ip)
-            mcookie = session.cookies.get_dict()
+            cookiejar = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
+            response = opener.open('http://' + self._ip)
+            mcookie = dict((c.name, c.value) for c in cookiejar)
             if not resp.status in (200, 404):
                 logging.error('Endpoint %s@%s failed to fetch nonce for HTTP configuration - got response code %s' %
                     (self._vendorname, self._ip, resp.status))

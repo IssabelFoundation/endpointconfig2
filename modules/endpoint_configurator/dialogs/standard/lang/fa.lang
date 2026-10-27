@@ -1,0 +1,105 @@
+<?php
+/* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4:
+  Codificación: UTF-8
+  +----------------------------------------------------------------------+
+  | Issabel version 0.5                                                  |
+  | http://www.issabel.org                                               |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2006 Palosanto Solutions S. A.                         |
+  +----------------------------------------------------------------------+
+  | The contents of this file are subject to the General Public License  |
+  | (GPL) Version 2 (the "License"); you may not use this file except in |
+  | compliance with the License. You may obtain a copy of the License at |
+  | http://www.opensource.org/licenses/gpl-license.php                   |
+  +----------------------------------------------------------------------+
+  | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
+  +----------------------------------------------------------------------+
+  $Id: fa.lang $
+*/
+global $arrLangModule;
+$arrLangModule = array(
+    "Information" => "اطلاعات",
+    "Custom credentials" => "اعتبارنامه‌های سفارشی",
+    "Custom endpoint properties" => "ویژگی‌های سفارشی دستگاه",
+    "Static configuration requires the following network parameter" => "پیکربندی ایستا به پارامتر شبکه زیر نیاز دارد",
+    "The following network parameter is not a valid IPv4 address" => "پارامتر شبکه زیر یک آدرس IPv4 معتبر نیست",
+    "Custom endpoint property collides with the following read-only property" => "ویژگی سفارشی دستگاه با ویژگی فقط‌خواندنی زیر تضاد دارد",
+    "Custom endpoint property collides with the following read-write property" => "ویژگی سفارشی دستگاه با ویژگی خواندنی/نوشتنی زیر تضاد دارد",
+    "Malformed request" => "درخواست بدشکل",
+    "Account is missing required property" => "حساب فاقد ویژگی الزامی است",
+    "Unsupported tech" => "فناوری پشتیبانی نمی‌شود",
+    "Duplicate account" => "حساب تکراری",
+    "(internal) Failed to check model" => "(داخلی) بررسی مدل ناموفق بود",
+    "Endpoint not found" => "دستگاه پیدا نشد",
+    "Model not set for endpoint" => "مدل برای دستگاه تنظیم نشده است",
+    "(internal) Failed to check account limit" => "(داخلی) بررسی محدودیت حساب ناموفق بود",
+    "Maximum number of accounts exceeded" => "حداکثر تعداد حساب‌ها بیشتر شد",
+    "Endpoint does not support static IP address" => "دستگاه از آدرس IP ایستا پشتیبانی نمی‌کند",
+    "Endpoint does not support dynamic IP address" => "دستگاه از آدرس IP پویا پشتیبانی نمی‌کند",
+    "(internal) Failed to load model properties" => "(داخلی) بارگذاری ویژگی‌های مدل ناموفق بود",
+    "Maximum number of accounts exceeded for tech" => "حداکثر تعداد حساب‌ها برای فناوری بیشتر شد",
+    "(internal) Failed to remove old properties" => "(داخلی) حذف ویژگی‌های قدیمی ناموفق بود",
+    "(internal) Failed to insert new property" => "(داخلی) درج ویژگی جدید ناموفق بود",
+    "(internal) Failed to read available accounts" => "(داخلی) خواندن حساب‌های موجود ناموفق بود",
+    "Account not found" => "حساب پیدا نشد",
+    "Account claimed by another endpoint" => "حساب توسط دستگاه دیگری تصاحب شده است",
+    "(internal) Failed to remove old account associations" => "(داخلی) حذف ارتباط‌های قدیمی حساب ناموفق بود",
+    "(internal) Failed to insert account association" => "(داخلی) درج ارتباط حساب ناموفق بود",
+    "(internal) Failed to insert account property" => "(داخلی) درج ویژگی حساب ناموفق بود",
+    "(internal) Failed to update modification time" => "(داخلی) به‌روزرسانی زمان تغییر ناموفق بود",
+    "(unknown)" => "(ناشناخته)",
+    "Yes" => "بله",
+    "No" => "خیر",
+    "(unknown/not detected)" => "(ناشناخته/شناسایی نشد)",
+    "Maximum number of SIP accounts" => "حداکثر تعداد حساب‌های SIP",
+    "Maximum number of IAX2 accounts" => "حداکثر تعداد حساب‌های IAX2",
+    "MAC" => "MAC",
+    "This flag is set if phone can get an IP address via DHCP" => "این پرچم تنظیم می‌شود اگر تلفن بتواند آدرس IP را از DHCP بگیرد",
+    "Dynamic IP supported" => "پشتیبانی از IP پویا",
+    "This flag is set if phone can be configured to use a static IP address" => "این پرچم تنظیم می‌شود اگر تلفن بتواند برای استفاده از آدرس IP ایستا پیکربندی شود",
+    "Static IP supported" => "پشتیبانی از IP ایستا",
+    "This flag is set if phone supports QoS with VLAN" => "این پرچم تنظیم می‌شود اگر تلفن از QoS با VLAN پشتیبانی کند",
+    "VLAN supported" => "پشتیبانی از VLAN",
+    "This flag is set if phone can query its configuration without cooperation of DHCP" => "این پرچم تنظیم می‌شود اگر تلفن بتواند پیکربندی خود را بدون همکاری DHCP دریافت کند",
+    "Static provisioning supported" => "پشتیبانی از تأمین ایستا",
+    "Unassigned accounts" => "حساب‌های تخصیص‌نیافته",
+    "Assigned accounts" => "حساب‌های تخصیص‌یافته",
+    "Properties for" => "ویژگی‌های",
+    "No account selected." => "هیچ حسابی انتخاب نشده است.",
+    "Dynamic IP (DHCP)" => "IP پویا (DHCP)",
+    "Static IP" => "IP ایستا",
+    "Static network attributes" => "ویژگی‌های شبکه ایستا",
+    "IP" => "IP",
+    "Network mask" => "ماسک شبکه",
+    "Gateway" => "دروازه",
+    "Primary DNS" => "DNS اصلی",
+    "Secondary DNS" => "DNS ثانویه",
+    "Telnet username" => "نام کاربری Telnet",
+    "Telnet password" => "رمز عبور Telnet",
+    "HTTP username" => "نام کاربری HTTP",
+    "HTTP password" => "رمز عبور HTTP",
+    "SSH username" => "نام کاربری SSH",
+    "SSH password" => "رمز عبور SSH",
+    "DIALOG_STANDARD_PROPERTIES_MESSAGE" =>
+        "هر تنظیم اضافی لازم برای پیکربندی صحیح دستگاه که در صفحات دیگر پوشش داده نشده است ".
+        "باید در اینجا وارد شود. توجه داشته باشید که همه پشتیبان‌های سازندگان همه ویژگی‌های ممکن را ".
+        "تشخیص نمی‌دهند. هر ویژگی ناشناخته نادیده گرفته می‌شود. با این حال، ویژگی‌های شناخته‌شده ".
+        "با قالب نامناسب می‌توانند پیکربندی دستگاه را دشوار کنند. همه ویژگی‌ها و مقادیر به حروف ".
+        "بزرگ و کوچک حساس هستند.",
+    "Property" => "ویژگی",
+    "Value" => "مقدار",
+    "Invalid endpoint ID" => "شناسه دستگاه نامعتبر است",
+    "Registered at" => "ثبت‌شده در",
+    "This account is in use by an unsupported/unscanned host" => "این حساب توسط میزبان پشتیبانی‌نشده/اسکن‌نشده استفاده می‌شود",
+    "Accounts" => "حساب‌ها",
+    "Network" => "شبکه",
+    "(unimplemented in DB)" => "(در پایگاه داده پیاده‌سازی نشده)",
+    "Actions" => "اقدامات",
+    "%s is required" => "%s الزامی است",
+    "%s is invalid" => "%s نامعتبر است",
+    "Required field" => "فیلد الزامی",
+    "Current IP" => "آی پی آدرس جاری",
+    "Manufacturer" => "سازنده",
+    "Model" => "مدل",
+);
+?>

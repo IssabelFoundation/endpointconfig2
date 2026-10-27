@@ -96,5 +96,15 @@ $arrLangModule = array(
     "Invalid endpoint ID" => "Invalid endpoint ID",
     'Registered at' => 'Registered at',
     'This account is in use by an unsupported/unscanned host' => 'This account is in use by an unsupported/unscanned host',
+    "Accounts" => "Accounts",
+    "Network" => "Network",
+    "(unimplemented in DB)" => "(unimplemented in DB)",
+    "Actions" => "Actions",
+    "%s is required" => "%s is required",
+    "%s is invalid" => "%s is invalid",
+    "Required field" => "Required field",
+    "Current IP" => "Current IP",
+    "Manufacturer" => "Manufacturer",
+    "Model" => "Model",
 );
 ?>

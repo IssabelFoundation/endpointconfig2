@@ -27,9 +27,11 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
-import urllib3
+import urllib.request
+import urllib.error
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import socket, urllib
+import socket
+import urllib.parse
 import http.client
 
 class Endpoint(BaseEndpoint):
@@ -71,13 +73,13 @@ class Endpoint(BaseEndpoint):
         realm = None
         try:
             # Attempt to tickle a 401 Unauthorized from the server.
-            response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/')
+            response = urllib.request.urlopen('http://' + self._ip + '/cgi-bin/')
             htmlbody = response.read()
-            urlmatch = re.findall(r'<a href="(.+?)">', htmlbody, re.IGNORECASE)
+            urlmatch = re.findall(r'<a href="(.+?)">', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
             for url in urlmatch:
-                response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/' + url)
+                response = urllib.request.urlopen('http://' + self._ip + '/cgi-bin/' + url)
                 htmlbody = response.read()
-        except urllib3.HTTPError as e:
+        except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="(.+)"', e.headers['WWW-Authenticate'])
                 if m != None: realm = m.group(1)
@@ -112,20 +114,20 @@ class Endpoint(BaseEndpoint):
                     ),
                 )
                 for sourceList in configSources:
-                    basic_auth_handler = urllib3.HTTPBasicAuthHandler()
+                    basic_auth_handler = urllib.request.HTTPBasicAuthHandler()
                     basic_auth_handler.add_password(
                         realm=realm,
                         uri='http://' + self._ip + '/',
                         user='admin',
                         passwd='admin')
-                    opener = urllib3.build_opener(basic_auth_handler)
+                    opener = urllib.request.build_opener(basic_auth_handler)
                     try:
                         for sourceUrl in sourceList:
                             response = opener.open('http://' + self._ip + sourceUrl)
                             htmlbody = response.read()
-                            m = re.search(r'UserAgent\s*=\s*(Yealink)?\s*(\S+)', htmlbody)
+                            m = re.search(r'UserAgent\s*=\s*(Yealink)?\s*(\S+)', htmlbody.decode('utf-8', 'replace'))
                             if (m != None): sModel = m.group(2)
-                    except urllib3.HTTPError as e:
+                    except urllib.error.HTTPError as e:
                         if e.code != 404:
                             logging.warning('Endpoint %s@%s failed to identify model from WWW-Authenticate: %s' %
                                     (self._vendorname, self._ip, str(e)))
@@ -137,11 +139,11 @@ class Endpoint(BaseEndpoint):
             else:
                 # Failed to tickle 401 unauthorized. Newer firmware with form login
                 try:
-                    response = urllib3.urlopen('http://' + self._ip + '/servlet?p=login&q=loginForm&jumpto=status')
+                    response = urllib.request.urlopen('http://' + self._ip + '/servlet?p=login&q=loginForm&jumpto=status')
                     htmlbody = response.read()
-                    m = re.search(r'T\("Enterprise IP phone (\S+)"\)', htmlbody, re.IGNORECASE)
+                    m = re.search(r'T\("Enterprise IP phone (\S+)"\)', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE)
                     if (m != None): sModel = m.group(1)
-                except urllib3.HTTPError as e:
+                except urllib.error.HTTPError as e:
                     logging.warning('Endpoint %s@%s failed to identify model from form login: %s' %
                             (self._vendorname, self._ip, str(e)))
                 except Exception as e:
@@ -225,7 +227,7 @@ class Endpoint(BaseEndpoint):
         # variables. The PAGEID variable must appear *before* CONFIG_DATA.
         # Therefore, urllib.urlencode() cannot be used as-is, because it 
         # places variables in alphabetical sort.
-        postvars =  'PAGEID=16&CONFIG_DATA=' + urllib.quote_plus(separator + separator.join(provvars))         
+        postvars =  'PAGEID=16&CONFIG_DATA=' + urllib.parse.quote_plus(separator + separator.join(provvars))         
 
         try:
             if not self._doAuthPost('/cgi-bin/ConfigManApp.com', postvars):

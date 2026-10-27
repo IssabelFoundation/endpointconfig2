@@ -28,12 +28,16 @@
 import logging
 import tempita
 import re
-import urllib3
-from eventlet.green import os, socket, urllib, time
-from eventlet.green.urllib.parse import urlencode
+import os
+import socket
+import time
 import errno
 import hashlib
 import random
+import urllib.request
+import urllib.error
+import urllib.parse
+from urllib.parse import urlencode
 from os.path import isfile
 from datetime import datetime
 import MySQLdb
@@ -43,12 +47,12 @@ ENDPOINT_CUSTOM_DIR = '/usr/local/share/issabel/endpoint-classes'
 TFTP_DIR = '/tftpboot'
 
 class BaseEndpoint(object):
-    
+
     @staticmethod
     def updateGlobalConfig(serveriplist, amipool, endpoints):
         '''Set up global environment for this manufacturer
-        
-        Typically this entails creating a directory structure under /tftpboot 
+
+        Typically this entails creating a directory structure under /tftpboot
         and/or creating global configuration files under same directory.
         '''
         return True
@@ -61,11 +65,11 @@ class BaseEndpoint(object):
         ipval = (int(ip[0]) << 24) | (int(ip[1]) << 16) | (int(ip[2]) << 8) | int(ip[3])
         for serverip in iplist:
             netinfo = iplist[serverip]
-            if defaultip == None: defaultip = serverip
+            if defaultip is None: defaultip = serverip
             if (ipval & netinfo['netmask']) == netinfo['network']:
                 return serverip
         return defaultip
-    
+
     def __init__(self, sVendorName, amipool, dbpool, sServerIP, sIP, mac):
         '''Base class constructor for an endpoint. '''
         self._vendorname = str(sVendorName)
@@ -96,28 +100,28 @@ class BaseEndpoint(object):
         self._endpointdir = ENDPOINT_DIR
         self._tftpdir = TFTP_DIR
         self._authtoken_sha1 = None
-    
+
     def getIP(self):
         return self._ip
-    
+
     def setModel(self, sModel):
         '''Assign a model for an endpoint vendor
-        
+
         Should override - default implementation assigns any model without any check.
         '''
         self._model = str(sModel)
         return True
-    
+
     def probeModel(self):
         '''Attempt to probe the phone model
-        
+
         Should override - default implementation does not probe anything.
         '''
         pass
-    
+
     def setExtraParameters(self, param):
-        '''Assign extra parameters for the endpoint 
-        
+        '''Assign extra parameters for the endpoint
+
         The default implementation knows about the following keywords:
         max_sip_accounts
         max_iax2_accounts
@@ -133,8 +137,8 @@ class BaseEndpoint(object):
         static_mask
         static_dns1
         static_dns2
-        
-        This method should be extended to store extra parameters beyond these 
+
+        This method should be extended to store extra parameters beyond these
         '''
         baseparam = ('max_sip_accounts', 'max_iax2_accounts', 'http_username',
             'http_password', 'telnet_username', 'telnet_password', 'dhcp',
@@ -145,14 +149,14 @@ class BaseEndpoint(object):
         self._max_sip_accounts = int(self._max_sip_accounts)
         self._max_iax2_accounts = int(self._max_iax2_accounts)
         self._dhcp = bool(int(self._dhcp))
-        
+
         if (not self.dynamic_ip_supported) and self._dhcp:
             logging.error('Endpoint %s@%s does not support dynamic IP configuration' % (self._vendorname, self._ip))
             return False
         if (not self.static_ip_supported) and (not self._dhcp):
             logging.error('Endpoint %s@%s does not support static IP configuration' % (self._vendorname, self._ip))
             return False
-        
+
         if self._dhcp:
             self._static_ip = None
             self._static_mask = None
@@ -160,22 +164,22 @@ class BaseEndpoint(object):
             self._static_dns1 = None
             self._static_dns2 = None
         else:
-            if self._static_ip == None or self._static_mask == None:
+            if self._static_ip is None or self._static_mask is None:
                 logging.error('Endpoint %s@%s requires static_ip and static_mask' %
                     (self._vendorname, self._ip))
                 return False
             for k in ('_static_ip', '_static_mask', '_static_gw', '_static_dns1', '_static_dns2'):
                 v = getattr(self, k)
-                if v != None:
+                if v is not None:
                     if v == '0.0.0.0' or not re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', v):
                         logging.error('Endpoint %s@%s found invalid IP address: %s' %
                             (self._vendorname, self._ip, v))
                         return False
         return True
-    
+
     def setAccountList(self, accountlist):
         '''Assign the list of accounts to configure on this endpoint
-        
+
         This implementation will warn if the list contains more accounts than
         supported by the particular model
         '''
@@ -201,83 +205,83 @@ class BaseEndpoint(object):
                     logging.warning(
                         'Endpoint %s@%s does not support %s accounts' %
                         (self._vendorname, self._ip, tech))
-    
+
     def updateLocalConfig(self):
         logging.error('Endpoint %s@%s unimplemented updateLocalConfig' % (self._vendorname, self._ip))
         return False
-    
+
     def _amireboot(self, sNotify):
         '''Send AMI SIP notification for phone reboot
-        
-        Execute a SIP notification that should cause a reboot of a phone. The 
+
+        Execute a SIP notification that should cause a reboot of a phone. The
         specific notification-string is phone-specific and should be defined in
-        /etc/asterisk/sip_notify.conf or (FreePBX) 
+        /etc/asterisk/sip_notify.conf or (FreePBX)
         /etc/asterisk/sip_notify_additional.conf .
          '''
         target = self._ip
-        for account in self._accounts:            
+        for account in self._accounts:
             if account.tech == 'sip' and account.registered:
                 target = account.account
                 break
         ami = self._amipool.get()
-        ami.command('sip notify ' + sNotify + ' ' + target)
+        ami.Command('sip notify ' + sNotify + ' ' + target)
         self._amipool.put(ami)
 
     def _hasRegisteredExtension(self):
         '''Returns True if at least one configured SIP account is registered'''
-        for endpoint in self._accounts:            
+        for endpoint in self._accounts:
             if endpoint.tech == 'sip' and endpoint.registered:
                 return True
-        return False        
-    
+        return False
+
     def _unregister(self):
         '''Force unregistration
-        
+
         Method to force unregistration of the registered endpoint as the final
         step while rebooting the phone.
         '''
         ami = self._amipool.get()
         for account in self._accounts:
             if account.registered:
-                ami.command(account.tech + ' unregister ' + account.account)
+                ami.Command(account.tech + ' unregister ' + account.account)
         self._amipool.put(ami)
-    
+
     def _saveVendor(self, sVendor):
         '''Forces a vendor different from the class default.
-        
+
         This should be done during model probe only. Otherwise behavior is undefined.
         '''
         if self._vendorname == sVendor: return
-        
+
         dbconn = None
         try:
             dbconn = self._dbpool.get()
             sth = dbconn.cursor()
-    
+
             # Query the model ID for the identified model
             sth.execute('SELECT id FROM manufacturer WHERE name = %s', (sVendor,))
             row = sth.fetchone()
-            if row != None:
+            if row is not None:
                 sth.execute('UPDATE endpoint SET id_manufacturer = %s, id_model = NULL WHERE last_known_ipv4 = %s',
                             (row[0], self._ip))
                 dbconn.commit()
                 self._vendorname = sVendor
             else:
                 logging.warning('Endpoint %s@%s failed to save unknown vendor "%s"' %
-                        (self._vendorname, self._ip, sModel))
+                        (self._vendorname, self._ip, sVendor))
             self._dbpool.put(dbconn)
         except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to query database - %s' %
                 (self._vendorname, self._ip, str(e)))
-            if dbconn != None: dbpool.put(dbconn)
-    
+            if dbconn is not None: self._dbpool.put(dbconn)
+
     def _saveModel(self, sModel):
         '''Save a probed model identification to database '''
         dbconn = None
         try:
             dbconn = self._dbpool.get()
             sth = dbconn.cursor()
-    
+
             # Query the model ID for the identified model
             sth.execute(
                 'SELECT model.id FROM model, manufacturer '\
@@ -285,7 +289,7 @@ class BaseEndpoint(object):
                     'AND manufacturer.name = %s AND model.name = %s',
                 (self._vendorname, sModel))
             row = sth.fetchone()
-            if row != None:
+            if row is not None:
                 sth.execute('UPDATE endpoint SET id_model = %s WHERE last_known_ipv4 = %s',
                             (row[0], self._ip))
                 dbconn.commit()
@@ -296,24 +300,24 @@ class BaseEndpoint(object):
         except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to query database - %s' %
                 (self._vendorname, self._ip, str(e)))
-            if dbconn != None: 
+            if dbconn is not None:
                 dbconn.rollback()
-                dbpool.put(dbconn)
-    
+                self._dbpool.put(dbconn)
+
     def _setConfigured(self):
         try:
             dbconn = self._dbpool.get()
             sth = dbconn.cursor()
             sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip,));
             row = sth.fetchone()
-            if row != None:
-                id = row[0]
-            
+            if row is not None:
+                row_id = row[0]
+
                 sth.execute(\
                     'UPDATE endpoint SET last_configured = NOW(), selected = 0, authtoken_sha1 = %s WHERE id = %s',\
-                    (self._authtoken_sha1, id,))
-                if not self._dhcp and self._static_ip != None and self._static_ip != self._ip:
-                    sth.execute('UPDATE endpoint SET last_known_ipv4 = %s WHERE id = %s', (self._static_ip, id,))
+                    (self._authtoken_sha1, row_id,))
+                if not self._dhcp and self._static_ip is not None and self._static_ip != self._ip:
+                    sth.execute('UPDATE endpoint SET last_known_ipv4 = %s WHERE id = %s', (self._static_ip, row_id,))
                     self._ip = self._static_ip
             sth.close()
             dbconn.commit()
@@ -321,10 +325,10 @@ class BaseEndpoint(object):
         except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to save configured status - %s' %
                 (self._vendorname, self._ip, str(e)))
-            if dbconn != None:
+            if dbconn is not None:
                 dbconn.rollback()
-                dbpool.put(dbconn)
-    
+                self._dbpool.put(dbconn)
+
     def _prepareVarList(self):
         '''Prepare list of common variables to substitute in template '''
         data_to_hash = (
@@ -333,7 +337,7 @@ class BaseEndpoint(object):
         hash = hashlib.sha1()
         hash.update(data_to_hash)
         self._authtoken_sha1 = hash.hexdigest()
-        
+
         vars = {
             'server_ip'         :   self._serverip,
             'static_ip'         :   self._static_ip,
@@ -349,61 +353,66 @@ class BaseEndpoint(object):
         for account in self._accounts:
             if account.tech == 'sip' or account.tech == 'pjsip':
                 vars['sip'].append(account)
-        
+
         # Save the auth hash NOW in order to have it available for HTTP requests
         try:
             dbconn = self._dbpool.get()
             sth = dbconn.cursor()
             sth.execute('SELECT id FROM endpoint WHERE last_known_ipv4 = %s', (self._ip,));
             row = sth.fetchone()
-            if row != None:
-                id = row[0]
-            
+            if row is not None:
+                row_id = row[0]
+
                 sth.execute(\
                     'UPDATE endpoint SET authtoken_sha1 = %s WHERE id = %s',\
-                    (self._authtoken_sha1, id,))
+                    (self._authtoken_sha1, row_id,))
             sth.close()
             dbconn.commit()
             self._dbpool.put(dbconn)
         except MySQLdb.Error as e:
             logging.error('Endpoint %s@%s failed to save authtoken - %s' %
                 (self._vendorname, self._ip, str(e)))
-            if dbconn != None:
+            if dbconn is not None:
                 dbconn.rollback()
-                dbpool.put(dbconn)
-        
+                self._dbpool.put(dbconn)
+
         return vars
-    
+
     def _doAuthGet(self, urlpath):
         '''Perform an HTTP GET on a particular URL using the HTTP credentials
-        
+
         Implemented using _doAuthPost
         '''
         return self._doAuthPost(urlpath, None)
-    
+
     def _doAuthPost(self, urlpath, postvars):
         '''Perform an HTTP POST on a particular URL using the HTTP credentials
-        
+
         This method is frequently used to make the phone use the Elastix server
         as the TFTP source for autoprovisioning.
-        ''' 
-        password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
+        '''
+        password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, 'http://' + self._ip + '/',
             self._http_username, self._http_password)
-        basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
-        digest_auth_handler = urllib3.HTTPDigestAuthHandler(password_manager)
-        opener = urllib3.build_opener(basic_auth_handler, digest_auth_handler)
-        if postvars != None:
-            opener.addheaders = [('Content-Type', 'application/x-www-form-urlencoded')]
-            if not isinstance(postvars, str):
-                postvars = urlencode(postvars)
+        basic_auth_handler = urllib.request.HTTPBasicAuthHandler(password_manager)
+        digest_auth_handler = urllib.request.HTTPDigestAuthHandler(password_manager)
+        opener = urllib.request.build_opener(basic_auth_handler, digest_auth_handler)
+        if postvars is not None:
+            if not isinstance(postvars, bytes):
+                postvars = urlencode(postvars).encode('utf-8')
+            req = urllib.request.Request(
+                'http://' + self._ip + urlpath,
+                data=postvars,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        else:
+            req = urllib.request.Request('http://' + self._ip + urlpath)
         try:
-            opener.open('http://' + self._ip + urlpath, postvars)
-        except urllib3.HTTPError as e:
+            opener.open(req)
+        except urllib.error.HTTPError as e:
             logging.error('Endpoint %s@%s failed to authenticate - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        except urllib3.URLError as e:
+        except urllib.error.URLError as e:
             logging.error('Endpoint %s@%s failed to authenticate - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
@@ -416,15 +425,20 @@ class BaseEndpoint(object):
     @staticmethod
     def _buildPhoneProv(serverip, vendor, authtoken):
         return 'http://' + serverip + '/modules/endpoint_configurator/phonesrv/phonesrv.php/' + vendor + '/' + authtoken
-    
+
     @staticmethod
     def _fetchTemplate(sTemplate, vars):
-        tmpl = tempita.Template.from_filename(ENDPOINT_DIR + '/tpl/' + sTemplate)
+        # encoding='utf-8' is required: from_filename() reads the file in binary
+        # and only decodes when an encoding is given. Without it tempita's parser
+        # receives bytes and dies with
+        #   TypeError: cannot use a string pattern on a bytes-like object
+        # so no template reached substitute() at all.
+        tmpl = tempita.Template.from_filename(ENDPOINT_DIR + '/tpl/' + sTemplate, encoding='utf-8')
         # Check for custom DIR
         if isfile (ENDPOINT_CUSTOM_DIR + '/tpl/' + sTemplate):
-            tmpl = tempita.Template.from_filename(ENDPOINT_CUSTOM_DIR + '/tpl/' + sTemplate)
+            tmpl = tempita.Template.from_filename(ENDPOINT_CUSTOM_DIR + '/tpl/' + sTemplate, encoding='utf-8')
         return tmpl.substitute(vars)
-    
+
     @staticmethod
     def _writeTemplate(sTemplate, vars, sOutput):
         BaseEndpoint._writeContent(sOutput, BaseEndpoint._fetchTemplate(sTemplate, vars))
@@ -437,6 +451,14 @@ class BaseEndpoint(object):
         except OSError as e:
             # swallow "no such file", re-raise anything else
             if e.errno != errno.ENOENT: raise e
+        # Callers pass both str and bytes: _fetchTemplate() renders with tempita
+        # and minidom.toxml() without an encoding both give str, while
+        # Grandstream's struct.pack and RCA's toxml('UTF-8') give bytes. The file
+        # is opened in binary mode, so encode the str side as UTF-8 - which is
+        # what the templates are in, down to the BOM on
+        # Polycom_global_sip_2.tpl.
+        if isinstance(content, str):
+            content = content.encode('utf-8')
         f = open(filepath, 'wb')
         f.write(content)
         f.close()
@@ -448,17 +470,17 @@ class BaseEndpoint(object):
 
     def deleteContent(self):
         # The default implementation deletes all files under the TFTP directory
-        # with a name containing a lowercase or uppercase MAC address that 
+        # with a name containing a lowercase or uppercase MAC address that
         # matches the one assigned for the endpoint
         lcasemac = self._mac.replace(':', '').lower()
         ucasemac = self._mac.replace(':', '').upper()
         for filename in os.listdir(TFTP_DIR):
             if (lcasemac in filename) or (ucasemac in filename):
                 os.unlink(TFTP_DIR + '/' + filename)
-        
+
         # Unregister accounts
         self._unregister()
- 
+
     @staticmethod
     def getTimezoneOffset():
         return -1 * time.timezone

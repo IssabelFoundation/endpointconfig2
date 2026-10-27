@@ -28,9 +28,9 @@
 import logging
 import re
 import issabel.BaseEndpoint
-import urllib3
+import urllib.request
+import urllib.error
 from issabel.BaseEndpoint import BaseEndpoint
-#from eventlet.green import http.client
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -62,8 +62,8 @@ class Endpoint(BaseEndpoint):
         sModel = None
         try:
             # Do not expect this to succeed. Only interested in exception.
-            urllib3.urlopen('http://' + self._ip + '/')
-        except urllib3.HTTPError as e:
+            urllib.request.urlopen('http://' + self._ip + '/')
+        except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Damall_([\w-]+)"', e.headers['WWW-Authenticate'])
                 if m != None: sModel = m.group(1)

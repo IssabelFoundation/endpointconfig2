@@ -415,7 +415,7 @@ SQL_CUENTAS_NO_ASIGNADAS;
         return TRUE;
     }
 
-    // TODO: combinar esta implementación con paloEndpointScanStatus::_recogerCuentasRegistradas()
+    // TODO: combinar esta implementación con issabelEndpointScanStatus::_recogerCuentasRegistradas()
     private function _recogerCuentasRegistradas()
     {
         if (!file_exists("/var/lib/asterisk/agi-bin/phpagi-asmanager.php"))

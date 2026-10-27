@@ -29,6 +29,7 @@ class EndpointManager_Standard
 {
     private $_db = NULL;
     private $_errMsg = NULL;
+    private $_fieldErrors = array();
 
     // Propiedades de sólo lectura y de libre modificación        
     private $_ro_properties = array('max_sip_accounts', 'max_iax2_accounts');
@@ -54,6 +55,8 @@ class EndpointManager_Standard
     }
 
     function getErrMsg() { return $this->_errMsg; }
+
+    function getFieldErrors() { return $this->_fieldErrors; }
     
     // Cargar los detalles del endpoint a configurar
     function cargarDetalles($id_endpoint)
@@ -155,6 +158,7 @@ SQL_ENDPOINT_ACCOUNTS;
     
     function guardarDetalles($id_endpoint, &$detalles)
     {
+        $this->_fieldErrors = array();
         if (is_null($db = $this->_getDB())) return NULL;
         $db->beginTransaction();
 
@@ -217,17 +221,24 @@ SQL_ENDPOINT_ACCOUNTS;
                 $detallesGuardar['static_dns1'] = $detallesGuardar['static_dns2'];
                 $detallesGuardar['static_dns2'] = NULL;
             }
+            $labels = array(
+                'static_ip'    => _tr('IP'),
+                'static_mask'  => _tr('Network mask'),
+                'static_gw'    => _tr('Gateway'),
+                'static_dns1'  => _tr('Primary DNS'),
+                'static_dns2'  => _tr('Secondary DNS'),
+            );
             foreach (array('static_ip', 'static_mask', 'static_dns1') as $k) {
                 if (!isset($detallesGuardar[$k])) {
-                    $this->_errMsg = _tr('Static configuration requires the following network parameter').
-                        ': '.$k;
+                    $this->_fieldErrors[$k] = sprintf(_tr('%s is required'), $labels[$k]);
+                    $this->_errMsg = $this->_fieldErrors[$k];
                     return NULL;
                 }
             }
             foreach (array('static_ip', 'static_gw', 'static_mask', 'static_dns1', 'static_dns2') as $k) {
                 if (!is_null($detallesGuardar[$k]) && !$validador->validar($k, $detallesGuardar[$k], 'ip')) {
-                    $this->_errMsg = _tr('The following network parameter is not a valid IPv4 address').
-                        ': '.$k;
+                    $this->_fieldErrors[$k] = sprintf(_tr('%s is invalid'), $labels[$k]);
+                    $this->_errMsg = $this->_fieldErrors[$k];
                     return NULL;
                 }
             }
@@ -237,6 +248,7 @@ SQL_ENDPOINT_ACCOUNTS;
         if (!isset($detalles['endpoint_properties']))
             $detalles['endpoint_properties'] = array();
         foreach ($detalles['endpoint_properties'] as $tupla) {
+            if (!isset($tupla['key'])) continue;
             if (in_array($tupla['key'], $this->_ro_properties)) {
                 $this->_errMsg = _tr('Custom endpoint property collides with the following read-only property').
                     ': '.$tupla['key'];
@@ -249,7 +261,9 @@ SQL_ENDPOINT_ACCOUNTS;
             }
         }
         foreach ($detalles['endpoint_properties'] as $tupla) {
-            if (trim($tupla['value']) != '') $detallesGuardar[$tupla['key']] = $tupla['value'];
+            if (!isset($tupla['key'])) continue;
+            if (isset($tupla['value']) && trim((string)$tupla['value']) != '')
+                $detallesGuardar[$tupla['key']] = $tupla['value'];
         }
         
         // Verificar cuentas telefónicas asignadas. Es válido (por ahora) no tener cuentas.

@@ -28,11 +28,12 @@
 import logging
 import re
 import issabel.BaseEndpoint
-import urllib3
+import urllib.request
+import urllib.error
+import urllib.parse
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import urllib
 import http.client
-from eventlet.green.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -68,8 +69,8 @@ class Endpoint(BaseEndpoint):
         sModel = None
         try:
             # Do not expect this to succeed. Only interested in exception.
-            urllib3.urlopen('http://' + self._ip + '/')
-        except urllib3.HTTPError as e:
+            urllib.request.urlopen('http://' + self._ip + '/')
+        except urllib.error.HTTPError as e:
             if e.code == 401 and 'WWW-Authenticate' in e.headers:
                 m = re.search(r'realm="Atlinks (.+)"', e.headers['WWW-Authenticate'])
                 if m != None: sModel = m.group(1)
@@ -130,7 +131,7 @@ class Endpoint(BaseEndpoint):
         # of the POST variables. The PAGEID variable must appear *before* 
         # CONFIG_DATA. Therefore, urlencode() cannot be used as-is, 
         # because it places variables in alphabetical sort.
-        postvars =  'PAGEID=16&CONFIG_DATA=' + urllib.quote_plus(separator + separator.join(provvars))         
+        postvars =  'PAGEID=16&CONFIG_DATA=' + urllib.parse.quote_plus(separator + separator.join(provvars))         
 
         try:
             if not self._doAuthPost('/cgi-bin/ConfigManApp.com', postvars):

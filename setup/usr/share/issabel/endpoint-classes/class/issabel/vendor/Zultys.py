@@ -28,7 +28,7 @@
 import logging
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
-from eventlet.green import os
+import os
 import errno
 
 # WARNING: this manufacturer has not been tested due to lack of samples!
@@ -66,7 +66,7 @@ class Endpoint(BaseEndpoint):
                 return False
             
             try:
-                os.makedirs(issabel.BaseEndpoint.TFTP_DIR + '/' + sModel, 0777)
+                os.makedirs(issabel.BaseEndpoint.TFTP_DIR + '/' + sModel, 0o777)
             except OSError as e:
                 # swallow "already exists", re-raise anything else
                 if e.errno != errno.EEXIST: 

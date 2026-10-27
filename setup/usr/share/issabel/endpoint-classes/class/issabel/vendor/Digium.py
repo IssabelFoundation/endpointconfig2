@@ -27,7 +27,7 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 import re
-import urllib3
+import urllib.request
 import issabel.BaseEndpoint
 from issabel.BaseEndpoint import BaseEndpoint
 import errno
@@ -52,10 +52,10 @@ class Endpoint(BaseEndpoint):
         '''
         sModel = None
         try:
-            response = urllib3.urlopen('http://' + self._ip + '/cgi-bin/prefetch.cgi')
+            response = urllib.request.urlopen('http://' + self._ip + '/cgi-bin/prefetch.cgi')
             htmlbody = response.read()
             if response.code == 200:
-                m = re.search(r'setting id="phone_model" value="(\w+)"', htmlbody)
+                m = re.search(r'setting id="phone_model" value="(\w+)"', htmlbody.decode('utf-8', 'replace'))
                 if m != None: sModel = m.group(1)
         except Exception as e:
             pass
@@ -218,8 +218,8 @@ class Endpoint(BaseEndpoint):
 
         # Reconfigure all the phones
         ami = amipool.get()
-        ami.command('module reload res_digium_phone.so');
-        ami.command('digium_phones reconfigure all');
+        ami.Command('module reload res_digium_phone.so')
+        ami.Command('digium_phones reconfigure all')
         amipool.put(ami)
         return True
 
@@ -241,8 +241,8 @@ class Endpoint(BaseEndpoint):
         # Reconfigure all the phones, if DPMA is available
         if Endpoint._isDPMAAvailable(amipool):
             ami = amipool.get()
-            ami.command('module reload res_digium_phone.so');
-            ami.command('digium_phones reconfigure all');
+            ami.Command('module reload res_digium_phone.so');
+            ami.Command('digium_phones reconfigure all');
             amipool.put(ami)
         else:
             logging.warning('DPMA not available or loaded, cannot broadcast reconfiguration')
@@ -333,7 +333,8 @@ class Endpoint(BaseEndpoint):
         try:
             f = open('/etc/asterisk/res_digium_phone.conf', 'wb')
             for currentsection in configsections:
-                f.write(currentsection['rawtext'])
+                # rawtext is str: it is built by concatenating config values.
+                f.write(currentsection['rawtext'].encode('utf-8'))
             f.close()
             return True
         except IOError as e:
@@ -345,7 +346,7 @@ class Endpoint(BaseEndpoint):
         ami = amipool.get()
         
         module_loaded = False
-        r = ami.command('module show like res_digium_phone')
+        r = ami.Command('module show like res_digium_phone')
         for s in r:
             if 'res_digium_phone' in s:
                 module_loaded = True
@@ -355,7 +356,7 @@ class Endpoint(BaseEndpoint):
             return False
         
         module_licensed = False
-        r = ami.command('digium_phones license status')
+        r = ami.Command('digium_phones license status')
         for s in r:
             if 'OK, Valid' in s:
                 module_licensed = True
@@ -402,11 +403,13 @@ class Endpoint(BaseEndpoint):
             # Write updated file and reload chan_sip
             if modified:
                 f = open('/etc/asterisk/sip_general_custom.conf', 'wb')
-                f.write(content)
+                # content is str: it is built by concatenating lines read in text
+                # mode and values from properties.
+                f.write(content.encode('utf-8'))
                 f.close()
                 
                 ami = amipool.get()
-                ami.command('module reload chan_sip.so');
+                ami.Command('module reload chan_sip.so');
                 amipool.put(ami)
         except IOError as e:
             if e.errno != errno.ENOENT:

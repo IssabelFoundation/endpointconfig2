@@ -21,7 +21,7 @@
   +----------------------------------------------------------------------+
   | Autores: Alex Villacís Lasso <a_villacis@palosanto.com>              |
   +----------------------------------------------------------------------+
-  $Id: paloEndpointConfigStatus.class.php, Thu 20 May 2021 08:30:39 AM EDT, nicolas@issabel.com
+  $Id: issabelEndpointConfigStatus.class.php, Thu 20 May 2021 08:30:39 AM EDT, nicolas@issabel.com
 */
 
 /*
@@ -36,7 +36,7 @@
  *  configLog   =>  Ruta completa al archivo del progreso escrito por python
  *  logOffset   =>  Posición en el archivo que se ha leído hasta ahora
  */
-class paloEndpointConfigStatus extends paloInterfaceSSE
+class issabelEndpointConfigStatus extends issabelInterfaceSSE
 {
     private $_db = NULL;
     private $_logfd = NULL;

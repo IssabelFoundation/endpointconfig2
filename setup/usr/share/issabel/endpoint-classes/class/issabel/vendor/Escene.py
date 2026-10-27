@@ -27,13 +27,13 @@
 # $Id: dialerd,v 1.2 2008/09/08 18:29:36 alex Exp $
 import logging
 from issabel.BaseEndpoint import BaseEndpoint
-import eventlet
-import urllib3
-from eventlet.green import socket, os
+import urllib.request
+import socket
+import os
 import errno
 import re
 from xml.dom.minidom import parse
-telnetlib = eventlet.import_patched('telnetlib')
+from issabel.telnetclient import Telnet
 
 class Endpoint(BaseEndpoint):
     def __init__(self, amipool, dbpool, sServerIP, sIP, mac):
@@ -55,7 +55,7 @@ class Endpoint(BaseEndpoint):
         specific phone model is at /mnt/system/PhoneType
         '''
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(10)
         except socket.timeout as e:
@@ -98,11 +98,11 @@ class Endpoint(BaseEndpoint):
         if sModel == None:
             http_username = 'root'
             http_password = 'root'
-            password_manager = urllib3.HTTPPasswordMgrWithDefaultRealm()
+            password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(None, 'http://' + self._ip + '/',
                 http_username, http_password)
-            basic_auth_handler = urllib3.HTTPBasicAuthHandler(password_manager)
-            opener = urllib3.build_opener(basic_auth_handler)
+            basic_auth_handler = urllib.request.HTTPBasicAuthHandler(password_manager)
+            opener = urllib.request.build_opener(basic_auth_handler)
             try:
                 response = opener.open('http://' + self._ip + '/overview.asp')
                 htmlbody = response.read()
@@ -111,7 +111,7 @@ class Endpoint(BaseEndpoint):
                 #IP115
                 #
                 # </font></span></strong><br>
-                m = re.search(r'<font face="\w+">\s+(\w+)\s+</font>', htmlbody, re.IGNORECASE | re.DOTALL)
+                m = re.search(r'<font face="\w+">\s+(\w+)\s+</font>', htmlbody.decode('utf-8', 'replace'), re.IGNORECASE | re.DOTALL)
                 if m != None:
                     self._saveVendor('RCA')
                     sModel = m.group(1)
@@ -153,7 +153,7 @@ class Endpoint(BaseEndpoint):
             return False
 
         try:
-            telnet = telnetlib.Telnet()
+            telnet = Telnet()
             telnet.open(self._ip)
             telnet.get_socket().settimeout(5)
         except socket.timeout as e:
@@ -168,9 +168,9 @@ class Endpoint(BaseEndpoint):
         # Attempt to login into admin telnet
         try:
             telnet.read_until('login:', 10)
-            if self._telnet_username != None: telnet.write(self._telnet_username.encode() + '\r\n')
+            if self._telnet_username != None: telnet.write(self._telnet_username + '\r\n')
             telnet.read_until('Password:', 10)
-            if self._telnet_password != None: telnet.write(self._telnet_password.encode() + '\r\n')
+            if self._telnet_password != None: telnet.write(self._telnet_password + '\r\n')
 
             # Wait for either prompt or login prompt
             idx, m, text = telnet.expect([r'login:', r'# '], 10)
@@ -189,7 +189,7 @@ class Endpoint(BaseEndpoint):
                     'reboot'
                 ]
                 for cmd in telnetQueue:
-                    telnet.write(cmd.encode() + '\r\n')
+                    telnet.write(cmd + '\r\n')
                     idx, m, text = telnet.expect([r'# '], 10)
                 telnet.close()
         except socket.error as e:
@@ -253,7 +253,8 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        dom.unlink()
+        # xml.dom.minidom.Document has no unlink(); that was the old xml.dom API.
+        # Dropping the reference is enough.
         dom = None
         
         return True
@@ -278,7 +279,8 @@ class Endpoint(BaseEndpoint):
             logging.error('Endpoint %s@%s failed to write configuration file - %s' %
                 (self._vendorname, self._ip, str(e)))
             return False
-        dom.unlink()
+        # xml.dom.minidom.Document has no unlink(); that was the old xml.dom API.
+        # Dropping the reference is enough.
         dom = None
         
         return True
